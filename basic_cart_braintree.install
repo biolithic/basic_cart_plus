@@ -11,7 +11,7 @@
 define('BASIC_CART_DEFAULT_CURRENCY', 'USD');
 
 /**
- * Default VAT state (enabled/disabled). 
+ * Default VAT state (enabled/disabled).
  */
 define('BASIC_CART_VAT_STATE', FALSE);
 
@@ -20,97 +20,39 @@ define('BASIC_CART_VAT_STATE', FALSE);
  */
 define('BASIC_CART_VAT_VALUE', '');
 
-
-/**
- * Implements hook_requirements().
- * This code is taken directly from the Stripe module at https://drupal.org/project/braintree , which has been in development mode for 2.5 years+
- */
- 
-function basic_cart_braintree_requirements($phase) {
-  $requirements = array();
-  if ($phase == 'runtime') {
-    $requirements['basic_cart_braintree'] = _basic_cart_braintree_requirement_check();
-  }
-  return $requirements;
-}
-
-/**
- * Helper function to hook_requirements.
- */
-function _basic_cart_braintree_requirement_check() {
-  $t = get_t();
-  if (($library = libraries_detect('braintree')) && !empty($library['installed'])) {
-    return array(
-      'title' => $t('Stripe Payment API PHP Library'),
-      'value' => $t('Stripe PHP Library is in place. Version @version', array('@version' => $library['version'])),
-      'severity' => REQUIREMENT_OK,
-    );
-  }
-  else {
-    return array(
-      'title' => $t('Stripe Payment API PHP Library'),
-      'value' => $t('The Stripe PHP Library is not in place. <a href="https://code.braintree.com/braintree-php-latest.zip">Download the and unzip the library</a> then place the contents of that directory in sites/all/libraries/braintree'),
-      'severity' => REQUIREMENT_ERROR,
-    );
-  }
-}
-
 /**
  * Implements hook_install().
  */
 function basic_cart_braintree_install() {
-  $t = get_t();
+$t = get_t();
 
-    variable_set('basic_cart_braintree_environment', "");
-    variable_set('basic_cart_braintree_merchantId_testkey', "");
-    variable_set('basic_cart_braintree_merchantId_livekey', "");
-    variable_set('basic_cart_braintree_publishable_testkey', "");
-    variable_set('basic_cart_braintree_publishable_livekey', "");
-    variable_set('basic_cart_braintree_secret_testkey', "");
-    variable_set('basic_cart_braintree_secret_livekey', "");
-    variable_set('basic_cart_braintree_price', "");
-    variable_set('basic_cart_braintree_gonelive', "");
-    variable_set('basic_cart_braintree_sendemail', "");
-    variable_set('basic_cart_braintree_firstname', "");
-    variable_set('basic_cart_braintree_lastname', "");
-    variable_set('basic_cart_braintree_phone', "");
-    variable_set('basic_cart_braintree_address', "");
-    variable_set('basic_cart_braintree_address2', "");
-    variable_set('basic_cart_braintree_city', "");
-    variable_set('basic_cart_braintree_county', "");
-    variable_set('basic_cart_braintree_state', "");
-    variable_set('basic_cart_braintree_zip', "");
-    variable_set('basic_cart_braintree_site_name', "");
-    variable_set('basic_cart_braintree_site_mail', "");
-  
-  // Setting up the default currency.
-  variable_set('basic_cart_braintree_currency', BASIC_CART_DEFAULT_CURRENCY);
-
-  // Setting up the default messages.
-  variable_set('basic_cart_braintree_admin_subject', $t('New order placed'));
-  $default_admin_message = $t('Hi,
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_admin_subject', $t('New order placed'));
+$default_admin_message = $t('Hi,
 An order was placed by %CUSTOMER_NAME (%CUSTOMER_EMAIL)
 Here are the order details:
 %ORDER_DETAILS');
-  variable_set('basic_cart_braintree_admin_message', $default_admin_message);
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_admin_message', $default_admin_message);
 
-  variable_set('basic_cart_braintree_send_user_message', 1);
-  variable_set('basic_cart_braintree_user_subject', $t('New order placed'));
-  $default_user_message = $t('Hi,
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_user_subject', $t('New order placed'));
+$default_user_message = $t('Hi,
 You just placed an order on the website @sitename. Here are the order details:
 %ORDER_DETAILS
-We will contact you as soon as possible.', array('@sitename' => variable_get('site_name')));
-  variable_set('basic_cart_braintree_user_message', $default_user_message);
+We will contact you as soon as possible.', array('@sitename' => config_get('system.core', 'site_name')));
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_user_message', $default_user_message);
 
-  $default_thank_you_title = $t("Thank you.");
-  variable_set('basic_cart_braintree_thank_you_title', $default_thank_you_title);
+$default_thank_you_title = $t("Thank you.");
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_thank_you_title', $default_thank_you_title);
 
-  $default_thank_you_message = $t("Thank you for placing an order on our website.\nWe will contact you as soon as possible.");
-  variable_set('basic_cart_braintree_thank_you_message', $default_thank_you_message);
-  
+$default_thank_you_message = $t("Thank you for placing an order on our website.\nWe will contact you as soon as possible.");
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_thank_you_message', $default_thank_you_message);
+
   // Redirect url after add to cart.
-  variable_set('basic_cart_braintree_redirect_user_after_add_to_cart', '<none>');
-  
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_redirect_user_after_add_to_cart', '<none>');
+
+// Setting the VAT default state and value.
+  config_set('basic_cart_braintree.settings', 'basic_cart_vat_state', BASIC_CART_VAT_STATE);
+  config_set('basic_cart_braintree.settings', 'basic_cart_vat_value', BASIC_CART_VAT_VALUE);
+
   // Check to see if the price field already exists.
   $field = field_info_field('price');
   // If the price field does not exist then create it.
@@ -122,20 +64,14 @@ We will contact you as soon as possible.', array('@sitename' => variable_get('si
     );
     field_create_field($field);
   }
-  
-  // Setting the VAT default state and value.
-  variable_set('basic_cart_braintree_vat_state', BASIC_CART_VAT_STATE);
-  variable_set('basic_cart_braintree_vat_value', BASIC_CART_VAT_VALUE);
 }
 
 /**
  * Implements hook_uninstall().
  */
 function basic_cart_braintree_uninstall() {
-  // Currency.
-  variable_del('basic_cart_braintree_currency');
   // Delete the price field.
-  $types = variable_get('basic_cart_braintree_content_types');
+  $types = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_content_types');
   if (is_array($types)) {
     // Foreach selected content type, delete the price field.
     foreach ($types as $type => $checked) {
@@ -149,171 +85,9 @@ function basic_cart_braintree_uninstall() {
       }
     }
   }
-  
-  // Delete Braintree Key variables.
-    variable_del('basic_cart_braintree_environment');
-    variable_del('basic_cart_braintree_merchantId_testkey');
-    variable_del('basic_cart_braintree_merchantId_livekey');
-    variable_del('basic_cart_braintree_publishable_testkey');
-    variable_del('basic_cart_braintree_publishable_livekey');
-    variable_del('basic_cart_braintree_secret_testkey');
-    variable_del('basic_cart_braintree_secret_livekey');
-    variable_del('basic_cart_braintree_price');
-    variable_del('basic_cart_braintree_gonelive');
-    variable_del('basic_cart_braintree_sendemail');
-    variable_del('basic_cart_braintree_firstname');
-    variable_del('basic_cart_braintree_lastname');
-    variable_del('basic_cart_braintree_phone');
-    variable_del('basic_cart_braintree_address');
-    variable_del('basic_cart_braintree_address2');
-    variable_del('basic_cart_braintree_city');
-    variable_del('basic_cart_braintree_county');
-    variable_del('basic_cart_braintree_state');
-    variable_del('basic_cart_braintree_zip');
-    variable_del('basic_cart_braintree_introduction');
-    variable_del('basic_cart_braintree_forward');
-    variable_del('basic_cart_braintree_resources');
-    variable_del('basic_cart_braintree_whyshouldyouread');
-    variable_del('basic_cart_braintree_copyright');
-    variable_del('basic_cart_braintree_abouttheauthor');
-    variable_del('basic_cart_braintree_conclusion');
-    variable_del('basic_cart_braintree_tableofcontents');
-    variable_del('basic_cart_braintree_site_name');
-    variable_del('basic_cart_braintree_site_mail');
-  
-  // Delete the content types from the variables table.
-  variable_del('basic_cart_braintree_content_types');
-  // Admin confirmation mail.
-  variable_del('basic_cart_braintree_admin_subject');
-  variable_del('basic_cart_braintree_admin_message');
-  // User confirmation email.
-  variable_del('basic_cart_braintree_user_subject');
-  variable_del('basic_cart_braintree_user_message');
-  variable_del('basic_cart_braintree_send_user_message');
-  // Thank you messages.
-  variable_del('basic_cart_braintree_thank_you_title');
-  variable_del('basic_cart_braintree_thank_you_message');
-  // Redirect user after add to cart action.
-  variable_del('basic_cart_braintree_redirect_user_after_add_to_cart');
-  // VAT default state and value.
-  variable_del('basic_cart_braintree_vat_state');
-  variable_del('basic_cart_braintree_vat_value');
-  
   // Purge all field infromation
     // http://api.drupal.org/api/function/field_purge_batch/7
     field_purge_batch(1000);
     drupal_flush_all_caches();
-  
-}
 
-/**
- * Adding Basic Cart new features (price, currency).
- */
-function basic_cart_braintree_update_7200() {
-  // Setting up the default currency.
-  variable_set('basic_cart_braintree_currency', BASIC_CART_DEFAULT_CURRENCY);
-  // Check to see if the price field already exists.
-  $field = field_info_field('price');
-  // If the price field does not exist then create it.
-  if (empty($field)) {
-    $field = array(
-      'field_name' => 'price',
-      'type' => 'number_decimal',
-      'entity_types' => array('node'),
-    );
-    field_create_field($field);
-  }
-
-  // Getting the content types for which we have basic cart active.
-  $node_types = variable_get('basic_cart_braintree_content_types');
-  if (is_array($node_types)) {
-    // Setting up the price field for the selected content types.
-    foreach ($node_types as $type => $checked) {
-      // If a node type is checked, then create the price field.
-      if ($checked) {
-        // Foreach checked content type, we must assign the price field to the content type.
-        $instance = field_info_instance('node', 'price', $type);
-        if (empty($instance)) {
-          $instance = array(
-            'field_name' => 'price',
-            'label' => t('Price'),
-            'description' => t('Please enter the price for this item.'),
-            'entity_type' => 'node',
-            'bundle' => $type,
-          );
-          // It doesn't exist. Create it.
-          field_create_instance($instance);
-        }
-      }
-      // If not, then delete the price field.
-      else {
-        $instance = field_info_instance('node', 'price', $type);
-        if (!empty($instance)) {
-          field_delete_instance($instance);
-        }
-      }
-    }
-  }
-}
-
-/**
- * Updating the price field to number_decimal instead of text. 
- */
-function basic_cart_braintree_update_7201() {
-  $product_types = basic_cart_braintree_product_types();
-  if (!empty($product_types)) {
-    $backup_products = array();
-    // Taking each content type.
-    foreach ($product_types as $product_type => $is_active) {
-      if (!empty($is_active)) {
-        // Taking each product and storing it's initial value.
-        $query = db_select('node', 'n')->fields('n', array('nid'));
-        $products = $query->condition('type', $product_type, '=')->execute()->fetchAll();
-        
-        if (!empty($products) && is_array($products)) {
-          foreach ($products as $i => $node) {
-            $node = node_load($node->nid);
-            $backup_products[$product_type][$node->nid] = $node;
-          }
-        }
-      }
-    }
-    // Now deleting the price field.
-    field_delete_field('price');
-    // Using field_purge_batch() to actually delete the field.
-    field_purge_batch(10);
-    // Creating the new field with the right type property.
-    $field = array(
-      'field_name' => 'price',
-      'type' => 'number_decimal',
-      'entity_types' => array('node'),
-    );
-    field_create_field($field);
-    
-    // Restoring the content type instance and the node's initial value.
-    if (!empty($backup_products)) {
-      foreach ($backup_products as $product_type => $nodes) {
-        // Restoring the field instance.
-        $instance = array(
-          'field_name' => 'price',
-          'label' => t('Price'),
-          'description' => t('Please enter the price for this item.'),
-          'entity_type' => 'node',
-          'bundle' => $product_type,
-        );
-        field_create_instance($instance);
-        // Restoring the node's initial value.
-        foreach ($nodes as $nid => $node) {
-          node_save($node);
-        }
-      }
-    }
-  }
-  
-  // Redirect url after add to cart.
-  variable_set('basic_cart_braintree_redirect_user_after_add_to_cart', '<none>');
-  
-  // Setting the VAT default state and value.
-  variable_set('basic_cart_braintree_vat_state', BASIC_CART_VAT_STATE);
-  variable_set('basic_cart_braintree_vat_value', BASIC_CART_VAT_VALUE);
 }

@@ -58,7 +58,8 @@ function theme_basic_cart_braintree_cart_total_price($variables) {
   $html .= '  <div class="basic-cart-total-price cell">' . t('Total price') . ': <strong>' . $total . '</strong></div>';
   $html .= '</div>';
   
-  $vat_is_enabled = (int) variable_get('basic_cart_braintree_vat_state');
+  $vat_is_enabled = (int)config_get('paywallbraintree.settings', 'basic_cart_braintree_vat_state');
+  
   if (!empty ($vat_is_enabled) && $vat_is_enabled) {
     $vat_value = basic_cart_braintree_price_format($price->vat);
     $html .= '<div class="basic-cart-cart-total-vat-contents row">';

@@ -4,8 +4,6 @@
  * Code for the Basic Cart Braintree Order feature.
  */
 
-include_once 'basic_cart_braintree_order.features.inc';
-
 /**
  * Implements hook_node_view().
  */
@@ -57,13 +55,13 @@ function basic_cart_braintree_order_view($node) {
   $total_price = basic_cart_braintree_price_format($total_price);
   // VAT.
   $vat = NULL;
-  $vat_is_enabled = (int) variable_get('basic_cart_braintree_vat_state');
+  $vat_is_enabled = (int)config_get('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state');
   if (!empty ($vat_is_enabled) && $vat_is_enabled) {
     $vat = field_get_items('node', $order, 'vat');
     $vat = isset($vat[0]['value']) ? check_plain($vat[0]['value']) : '';
     $vat = basic_cart_braintree_price_format($vat);
   }
-  
+
   // Hide field data.
   unset($node->content['field_email']);
   unset($node->content['field_phone']);
@@ -73,8 +71,8 @@ function basic_cart_braintree_order_view($node) {
   unset($node->content['field_total_price']);
   // Page title.
   $title = t('Order ID: @oid', array('@oid' => $oid));
-  drupal_set_title($title);
-  
+  backdrop_set_title($title);
+
   return theme('basic_cart_braintree_order_details', array(
     'name' => $name,
     'email' => $email,
@@ -144,13 +142,12 @@ function basic_cart_braintree_order_register_order($name, $email, $order_details
   if (!is_array($cart)) {
     return NULL;
   }
+
   // Registering the new order to the database.
-  $node = new stdClass();
-  $node->type = 'order';
-  node_object_prepare($node);
-  // Title, mandatory field.
-  $node->title = $name;
-  $node->language = LANGUAGE_NONE;
+$node = entity_create('node', array ('type' => 'order'));
+$node->uid = $user->uid;
+$node->title = $name;
+$node->language = LANGUAGE_NONE;
   // Body.
   if (isset($order_details['message'])) {
     $node->body[$node->language][0]['value'] = $order_details['message'];
@@ -185,13 +182,13 @@ function basic_cart_braintree_order_register_order($name, $email, $order_details
     $node->field_total_price[$node->language][0]['value'] = $price->total;
   }
   // VAT.
-  $vat_is_enabled = (int) variable_get('basic_cart_braintree_vat_state');
+  $vat_is_enabled = (int) config_get('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state');
   if (!empty ($vat_is_enabled) && $vat_is_enabled) {
     $node->vat[$node->language][0]['value'] = $price->vat;
   }
-  
+
   // Registering order.
-  node_save($node);
+  $node->save();
   // Now we have a node ID, we need to save the associated products.
   $oid = $node->nid;
   foreach ($cart as $nid => $n) {
@@ -200,8 +197,8 @@ function basic_cart_braintree_order_register_order($name, $email, $order_details
       'nid' => $n->nid,
       'quantity' => $n->basic_cart_braintree_quantity,
     );
-    drupal_write_record('basic_cart_braintree_order_node', $record);
+    backdrop_write_record('basic_cart_braintree_order_node', $record);
   }
-  
+
   return $node;
 }
