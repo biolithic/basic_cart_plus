@@ -71,7 +71,7 @@ class basic_cart_handler_field_price extends views_handler_field_numeric {
           return '';
         }
         // Set the price format.
-        $value = basic_cart_price_format($value);
+        $value = basic_cart_braintree_price_format($value);
         return theme('basic_cart_price', array('price' => $value));
       }
     }

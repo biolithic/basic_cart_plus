@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Basic cart shopping cart implementation functions.
+ * Basic cart Braintree shopping cart implementation functions.
  */
 
 /**
@@ -30,14 +30,19 @@ function basic_cart_braintree_cart_form() {
     '#prefix' => '<div class="basic-cart-cart basic-cart-grid">',
     '#suffix' => '</div>',
   );
-  // Cart elements.
-  foreach ($cart as $nid => $node) {
-    $form['cartcontents'][$nid] = array(
+
+// Cart elements.
+foreach ($cart as $cid => $value) {
+if (is_numeric($cid))
+{
+$node = node_load($cart[$value]);
+    $form['cartcontents'][$cid] = array(
       '#type' => 'textfield',
       '#size' => 1,
-      '#default_value' => $node->basic_cart_braintree_quantity,
+      '#default_value' => $_SESSION['basic_cart_braintree']['cart'][$cid . 'quantity'],
       '#theme' => 'basic_cart_braintree_render_cart_element',
     );
+  }
   }
   // Total price.
   $form['total_price'] = array(
@@ -74,11 +79,12 @@ function basic_cart_braintree_cart_form_submit($form_id, $form_state) {
   foreach ($form_state['values']['cartcontents'] as $nid => $value) {
     $quantity = (int) $value;
     if ($quantity > 0) {
-      $_SESSION['basic_cart_braintree']['cart'][$nid]->basic_cart_braintree_quantity = $quantity;
+      $_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity'] = $quantity;
     }
     // If the quantity is zero, we just remove the node from the cart.
     elseif ($quantity == 0) {
       unset($_SESSION['basic_cart_braintree']['cart'][$nid]);
+      unset($_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity']);
     }
   }
 
@@ -103,25 +109,18 @@ function basic_cart_braintree_add_to_cart($nid = NULL) {
     $cart = basic_cart_braintree_get_cart();
     if (!empty($cart) && in_array($nid, array_keys($cart))) {
       // Clicked 2 times on add to cart button. Increment quantity.
-      $_SESSION['basic_cart_braintree']['cart'][$nid]->basic_cart_braintree_quantity++;
+    $x = $_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity'];
+    $x++;
+    $_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity'] = $x;
     }
     else {
-      $node = node_load($nid);
-      $node->basic_cart_braintree_quantity = 1;
-      // Adding description.
-      $body = field_get_items('node', $node, 'body');
-      $description = isset($body[0]['value']) ? check_plain(strip_tags($body[0]['value'])) : '';
-      $node->basic_cart_braintree_node_description = $description;
-      // Unit price.
-      $unit_price = field_get_items('node', $node, 'price');
-      $unit_price = isset($unit_price[0]['value']) ? check_plain(strip_tags($unit_price[0]['value'])) : 0;
-      $node->basic_cart_braintree_unit_price = $unit_price;
-
       // Storing in session.
-      $_SESSION['basic_cart_braintree']['cart'][$nid] = $node;
+      $_SESSION['basic_cart_braintree']['cart'][$nid] = $nid;
+      $_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity'] = 1;
     }
   }
   backdrop_set_message(t('Shopping cart updated.'));
+  
   $redirect = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_redirect_user_after_add_to_cart');
   if (empty($redirect)) {
     backdrop_goto('cart');
@@ -145,6 +144,7 @@ function basic_cart_braintree_remove_from_cart($nid = NULL) {
   $nid = (int) $nid;
   if ($nid > 0) {
     unset($_SESSION['basic_cart_braintree']['cart'][$nid]);
+    unset($_SESSION['basic_cart_braintree']['cart'][$nid . 'quantity']);
   }
   backdrop_set_message(t('Shopping cart updated.'));
   backdrop_goto('cart');
@@ -190,12 +190,15 @@ function basic_cart_braintree_get_total_price() {
   }
 
   $total_price = 0;
-  foreach ($cart as $nid => $node) {
-    if (isset($node->basic_cart_braintree_quantity) && isset($node->basic_cart_braintree_unit_price)) {
-      $total_price += $node->basic_cart_braintree_quantity * $node->basic_cart_braintree_unit_price;
+  foreach ($cart as $cid => $value) {
+if (is_numeric($cid))
+{
+$node = node_load($cart[$value]);
+    if (isset($_SESSION['basic_cart_braintree']['cart'][$cid . 'quantity']) && isset($node->price["und"][0]["value"])) {
+      $total_price += $_SESSION['basic_cart_braintree']['cart'][$cid . 'quantity'] * basic_cart_braintree_price_format($node->price["und"][0]["value"]);
     }
   }
-
+      }
   $return['price'] = $total_price;
 
   // Checking whether to apply the VAT or not.
@@ -230,7 +233,7 @@ function basic_cart_braintree_empty_cart() {
  */
 function basic_cart_braintree_price_format($price) {
   $format = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_price_format');
-  $currency = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_currency');
+  $currency = check_plain(config_get('basic_cart_braintree.settings', 'basic_cart_braintree_currency'));
   $price = (float) $price;
   switch ($format) {
     case 0:
@@ -359,6 +362,12 @@ function basic_cart_braintree_checkout_form() {
     '#type' => 'textfield',
     '#description' => t('Please enter your address.'),
   );
+  
+  $form['basic_cart_braintree_checkout_address2'] = array(
+    '#title' => t('Address 2'),
+    '#type' => 'textfield',
+    '#description' => t('Please enter your address.'),
+  );
 
   $form['basic_cart_braintree_checkout_city'] = array(
     '#title' => t('City'),
@@ -366,18 +375,39 @@ function basic_cart_braintree_checkout_form() {
     '#size' => 40,
     '#description' => t('Please enter your city.'),
   );
+  
+  $form['basic_cart_braintree_checkout_county'] = array(
+    '#title' => t('County'),
+    '#type' => 'textfield',
+    '#size' => 25,
+    '#description' => t('Please enter your county.'),
+  );
+  
+  $form['basic_cart_braintree_checkout_state'] = array(
+    '#title' => t('State'),
+    '#type' => 'textfield',
+    '#size' => 3,
+    '#description' => t('Please enter your state.'),
+  );
 
   $form['basic_cart_braintree_checkout_zipcode'] = array(
     '#title' => t('Zip code'),
     '#type' => 'textfield',
-    '#size' => 16,
+    '#size' => 6,
     '#description' => t('Please enter your zipcode.'),
   );
-
-  $form['basic_cart_braintree_checkout_message'] = array(
-    '#title' => t('Message'),
+  
+  $form['basic_cart_braintree_checkout_country'] = array(
+    '#title' => t('Country'),
+    '#type' => 'textfield',
+    '#size' => 25,
+    '#description' => t('Please enter your country.'),
+  );
+  
+  $form['basic_cart_braintree_checkout_comment'] = array(
+    '#title' => t('Comment'),
     '#type' => 'textarea',
-    '#description' => t('If you wish to add a comment, please use this message area.'),
+    '#description' => t('If you wish to add a comment about your order, please use this message area.'),
   );
 
   $form['basic_cart_braintree_checkout_submit'] = array(
@@ -419,10 +449,14 @@ function basic_cart_braintree_checkout_form_submit($form, &$form_state) {
     $email = $form_state['values']['basic_cart_braintree_checkout_email'];
     $order_details_ = array(
       'phone' => $form_state['values']['basic_cart_braintree_checkout_phone'],
-      'city' => $form_state['values']['basic_cart_braintree_checkout_city'],
-      'zipcode' => $form_state['values']['basic_cart_braintree_checkout_zipcode'],
       'address' => $form_state['values']['basic_cart_braintree_checkout_address'],
-      'message' => $form_state['values']['basic_cart_braintree_checkout_message'],
+      'address2' => $form_state['values']['basic_cart_braintree_checkout_address2'],
+      'city' => $form_state['values']['basic_cart_braintree_checkout_city'],
+      'county' => $form_state['values']['basic_cart_braintree_checkout_county'],
+      'state' => $form_state['values']['basic_cart_braintree_checkout_state'],
+      'country' => $form_state['values']['basic_cart_braintree_checkout_country'],
+      'zipcode' => $form_state['values']['basic_cart_braintree_checkout_zipcode'],
+      'comment' => $form_state['values']['basic_cart_braintree_checkout_comment'],
     );
     $order = basic_cart_braintree_order_register_order($name, $email, $order_details_);
 
@@ -436,11 +470,16 @@ function basic_cart_braintree_checkout_form_submit($form, &$form_state) {
 
   // Building the order details.
   $i = 0;
-  foreach ($cart as $nid => $node) {
-    $unit_price = basic_cart_braintree_price_format($node->basic_cart_braintree_unit_price);
+  foreach ($cart as $cid => $value) {
+if (is_numeric($cid))
+{
+$node = node_load($cart[$value]);
+    
+    $unit_price = basic_cart_braintree_price_format($node->price["und"][0]["value"]);
     $order_details .= ++$i . '. ' . $node->title . "\t" .
-                      $node->basic_cart_braintree_quantity . ' x ' . $unit_price . "\n";
+                      $_SESSION['basic_cart_braintree']['cart'][$cid . 'quantity'] . ' x ' . $unit_price . "\n";
   }
+}
   $order_details .= "\n";
   $order_details .= "Total price: " . $total_price;
   $vat_is_enabled = (int) config_get('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state');
@@ -450,14 +489,15 @@ function basic_cart_braintree_checkout_form_submit($form, &$form_state) {
   }
   // Pleaceholder replacement.
   $search = array(
-    '%CUSTOMER_NAME', '%CUSTOMER_EMAIL', '%CUSTOMER_PHONE', '%CUSTOMER_CITY',
-    '%CUSTOMER_ZIPCODE', '%CUSTOMER_ADDRESS', '%CUSTOMER_MESSAGE', '%ORDER_DETAILS',
+    '%CUSTOMER_NAME', '%CUSTOMER_EMAIL', '%CUSTOMER_PHONE', '%CUSTOMER_ADDRESS', '%CUSTOMER_ADDRESS2', '%CUSTOMER_CITY', '%CUSTOMER_STATE',
+    '%CUSTOMER_ZIPCODE', '%CUSTOMER_COUNTY', '%CUSTOMER_COUNTRY', '%CUSTOMER_COMMENT', '%ORDER_DETAILS',
   );
   $replace = array(
-    $form_state['values']['basic_cart_braintree_checkout_name'], $form_state['values']['basic_cart_braintree_checkout_email'],
-    $form_state['values']['basic_cart_braintree_checkout_phone'], $form_state['values']['basic_cart_braintree_checkout_city'],
-    $form_state['values']['basic_cart_braintree_checkout_zipcode'], $form_state['values']['basic_cart_braintree_checkout_address'],
-    $form_state['values']['basic_cart_braintree_checkout_message'], $order_details,
+    $form_state['values']['basic_cart_braintree_checkout_name'], $form_state['values']['basic_cart_braintree_checkout_email'], $form_state['values']['basic_cart_braintree_checkout_phone'],
+    $form_state['values']['basic_cart_braintree_checkout_address'], $form_state['values']['basic_cart_braintree_checkout_address2'],
+    $form_state['values']['basic_cart_braintree_checkout_city'], $form_state['values']['basic_cart_braintree_checkout_state'], $form_state['values']['basic_cart_braintree_checkout_zipcode'],
+    $form_state['values']['basic_cart_braintree_checkout_county'], $form_state['values']['basic_cart_braintree_checkout_country'],
+    $form_state['values']['basic_cart_braintree_checkout_comment'], $order_details,
   );
   // Admin message.
   $message_html = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_admin_message');
@@ -594,7 +634,7 @@ function basic_cart_braintree_create_form($form, $form_state)
 
     $form['billing'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Billing & Account Details - Enter your account for this site, or this will create one for you.'),
+        '#title' => t('Billing & Account Details - Enter your account, or this site will create one for you.'),
         '#collapsible' => TRUE,
         '#collapsed' => FALSE
     );
@@ -747,6 +787,32 @@ function basic_cart_braintree_create_form($form, $form_state)
         );
     }
 
+        $testvariable = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_country');
+    if ($testvariable > 0) {
+        $country                    = isset($form_state['values']['billing']['country']) ? $form_state['values']['billing']['country'] : '';
+        $form['billing']['country'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Country'),
+            '#required' => TRUE,
+            '#size' => 20,
+            '#maxlength' => 20,
+            '#default_value' => $country
+        );
+    }
+    
+    $testvariable = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_comment');
+    if ($testvariable > 0) {
+        $comment                    = isset($form_state['values']['billing']['comment']) ? $form_state['values']['billing']['comment'] : '';
+        $form['billing']['comment'] = array(
+            '#type' => 'textarea',
+            '#title' => t('Comment'),
+            '#required' => TRUE,
+            '#size' => 100,
+            '#maxlength' => 255,
+            '#default_value' => $comment
+        );
+    }
+    
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Next',
@@ -820,12 +886,6 @@ function basic_cart_braintree_form_payment($form, $form_state)
         '#title' => t('Payment Details'),
         '#collapsible' => TRUE,
         '#collapsed' => FALSE
-    );
-
-    $form['payment']['instructions'] = array(
-        '#type' => 'markup',
-        '#title' => t('Demo information'),
-        '#markup' => '<p>Please use the demo credit card # of 4242424242424242 and CVC # of 123 to fake buy this.</p>'
     );
 
     $form['payment']['braintreetoken'] = array(
@@ -1128,13 +1188,18 @@ function basic_cart_braintree_form_callback($form, $form_state)
   if (!empty ($vat_is_enabled) && $vat_is_enabled) {
     $vat = basic_cart_braintree_price_format($price->vat);
   }
-
+  
   // Building the order details.
   $i = 0;
-  foreach ($cart as $nid => $node) {
-    $unit_price = basic_cart_braintree_price_format($node->basic_cart_braintree_unit_price);
+  // Cart elements.
+  foreach ($cart as $cid => $value) {
+  if (is_numeric($cid))
+  {
+  $node = node_load($cart[$value]);    
+    $unit_price = basic_cart_braintree_price_format($node->price["und"][0]["value"]);
     $order_details .= ++$i . '. ' . $node->title . "\t" .
-                      $node->basic_cart_braintree_quantity . ' x ' . $unit_price . "\n";
+                      $_SESSION['basic_cart_braintree']['cart'][$cid . 'quantity'] . ' x ' . $unit_price . "\n";
+  }
   }
   $order_details .= "\n";
   $order_details .= "Total price: " . $total_price;
@@ -1144,8 +1209,7 @@ function basic_cart_braintree_form_callback($form, $form_state)
     $order_details .= "Total VAT: " . $vat;
   }
   $total_price = $total_price * 1;
-  backdrop_set_message($total_price);
-
+  
     $result = Braintree_Transaction::sale(array(
         'amount' => $total_price,
         'creditCard' => array(
@@ -1195,12 +1259,6 @@ function basic_cart_braintree_form_callback($form, $form_state)
             $extendedAddress = 'unknown';
         }
 
-        if (!empty($billing_values['billing']['address2'])) {
-            $extendedAddress = $billing_values['billing']['address2'];
-        } else {
-            $extendedAddress = 'unknown';
-        }
-
         if (!empty($billing_values['billing']['city'])) {
             $locality = $billing_values['billing']['city'];
         } else {
@@ -1228,7 +1286,7 @@ function basic_cart_braintree_form_callback($form, $form_state)
                 'number' => $form_state['values']['card'],
                 'expirationMonth' => $form_state['values']['month'],
                 'expirationYear' => $form_state['values']['year'],
-                'cardholderName' => 'Mike Jones',
+                'cardholderName' => $firstName . ' ' . $lastName,
                 'billingAddress' => array(
                     'firstName' => $firstName,
                     'lastName' => $lastName,
@@ -1251,13 +1309,16 @@ function basic_cart_braintree_form_callback($form, $form_state)
     $name = $billing_values['billing']['firstname'] . " " . $billing_values['billing']['lastname'];
     $email = $billing_values['billing']['email'];
 
-
     $order_details_ = array(
     'phone' => (empty($billing_values['billing']['phone'])) ? 'default' : $billing_values['billing']['phone'],
-    'city' => (empty($billing_values['billing']['city'])) ? 'default' : $billing_values['billing']['city'],
-    'zipcode' => (empty($billing_values['billing']['zip'])) ? 'default' : $billing_values['billing']['zip'],
     'address' => (empty($billing_values['billing']['address'])) ? 'default' : $billing_values['billing']['address'],
-    'message' => (empty($billing_values['billing']['message'])) ? 'default' : $billing_values['billing']['message'],
+    'address2' => (empty($billing_values['billing']['address2'])) ? 'default' : $billing_values['billing']['address2'],
+    'city' => (empty($billing_values['billing']['city'])) ? 'default' : $billing_values['billing']['city'],
+    'state' => (empty($billing_values['billing']['state'])) ? 'default' : $billing_values['billing']['state'],
+    'zipcode' => (empty($billing_values['billing']['zip'])) ? 'default' : $billing_values['billing']['zip'],
+    'county' => (empty($billing_values['billing']['county'])) ? 'default' : $billing_values['billing']['county'],
+    'country' => (empty($billing_values['billing']['country'])) ? 'default' : $billing_values['billing']['country'],
+    'comment' => (empty($billing_values['billing']['comment'])) ? 'default' : $billing_values['billing']['comment'],
     );
     $order = basic_cart_braintree_order_register_order($name, $email, $order_details_);
 
@@ -1271,16 +1332,23 @@ function basic_cart_braintree_form_callback($form, $form_state)
 
   // Pleaceholder replacement.
   $search = array(
-    '%CUSTOMER_NAME', '%CUSTOMER_EMAIL', '%CUSTOMER_PHONE', '%CUSTOMER_CITY',
-    '%CUSTOMER_ZIPCODE', '%CUSTOMER_ADDRESS', '%CUSTOMER_MESSAGE', '%ORDER_DETAILS',
+    '%CUSTOMER_NAME', '%CUSTOMER_EMAIL', '%CUSTOMER_PHONE', '%CUSTOMER_ADDRESS', '%CUSTOMER_ADDRESS2', '%CUSTOMER_CITY', '%CUSTOMER_STATE',
+    '%CUSTOMER_ZIPCODE', '%CUSTOMER_COUNTY', '%CUSTOMER_COUNTRY', '%CUSTOMER_COMMENT', '%ORDER_DETAILS',
   );
 
   $name = $billing_values['billing']['firstname'] . " " . $billing_values['billing']['lastname'];
   $replace = array(
-    $name, empty($billing_values['billing']['email']) ? 'default' : $billing_values['billing']['email'],
-    empty($billing_values['billing']['phone']) ? 'default' : $billing_values['billing']['phone'], empty($billing_values['billing']['city']) ? 'default' : $billing_values['billing']['city'],
-    empty($billing_values['billing']['zip']) ? 'default' : $billing_values['billing']['zip'], empty($billing_values['billing']['address']) ? 'default' : $billing_values['billing']['address'],
-    empty($billing_values['billing']['message']) ? 'default' : $billing_values['billing']['message'], $order_details,
+    $name,
+    empty($billing_values['billing']['email']) ? 'default' : $billing_values['billing']['email'],
+    empty($billing_values['billing']['phone']) ? 'default' : $billing_values['billing']['phone'],
+    empty($billing_values['billing']['address']) ? 'default' : $billing_values['billing']['address'],
+    empty($billing_values['billing']['address2']) ? 'default' : $billing_values['billing']['address2'],
+    empty($billing_values['billing']['city']) ? 'default' : $billing_values['billing']['city'],
+    empty($billing_values['billing']['state']) ? 'default' : $billing_values['billing']['state'],
+    empty($billing_values['billing']['zip']) ? 'default' : $billing_values['billing']['zip'],
+    empty($billing_values['billing']['county']) ? 'default' : $billing_values['billing']['county'],
+    empty($billing_values['billing']['country']) ? 'default' : $billing_values['billing']['country'],
+    empty($billing_values['billing']['comment']) ? 'default' : $billing_values['billing']['comment'], $order_details,
   );
   // Admin message.
   $message_html = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_admin_message');
@@ -1343,17 +1411,6 @@ function basic_cart_braintree_form_callback($form, $form_state)
   else {
     backdrop_set_message(t('There was a problem in submitting your order. Please try again later.'), 'error');
   }
-
-
-
-
-        global $user;
-        $uid = $user->uid; // User ID of user that you want to add role to.
-        if ($role = user_role_load_by_name("paywall_member")) {
-            user_multiple_role_edit(array(
-                $uid
-            ), 'add_role', $role->rid);
-        }
 
         $testvariable = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_sendemail');
         if ($testvariable > 0) {

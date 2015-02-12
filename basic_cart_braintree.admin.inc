@@ -54,7 +54,7 @@ $product_types = config_get('basic_cart_braintree.settings', 'basic_cart_braintr
   $form['currency']['basic_cart_braintree_currency'] = array(
     '#title' => t('Currency'),
     '#type' => 'textfield',
-    '#description' => t("Please choose the currency."),
+    '#description' => t("Please choose the currency. usd = US Dollars."),
     '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_currency'),
   );
 
@@ -96,7 +96,7 @@ $product_types = config_get('basic_cart_braintree.settings', 'basic_cart_braintr
     '#type' => 'textfield',
     '#description' => t("Enter the page you wish to redirect the customer to when an item is added to the cart, or &lt;none&gt; for no redirect."),
     '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_redirect_user_after_add_to_cart'),
-    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('basic_cart_braintree.settings', 'clean_url', 0) ? '' : '?q='),
+    '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (config_get('system.core', 'clean_url') ? '' : '?q='),
   );
 
   $form['basic_cart_braintree_readme'] = array(
@@ -114,7 +114,7 @@ $product_types = config_get('basic_cart_braintree.settings', 'basic_cart_braintr
     $form['basic_cart_braintree_whatits'] = array(
         '#type' => 'markup',
         '#title' => t('What is this module?'),
-        '#markup' => '<p> basic_cart_braintree produces a shopping cart with a built-in checkout/credit card processor to sell single-file digital content like e-books.  Drupal Commerce is recommended, but if that suite is too large for your needs, this is a simple payment solution.</p>'
+        '#markup' => '<p> basic_cart_braintree provides a shopping cart with a built-in checkout/credit card processor to sell simple products.</p>'
     );
 
     $form['basic_cart_braintree_wherefrom'] = array(
@@ -273,7 +273,21 @@ $product_types = config_get('basic_cart_braintree.settings', 'basic_cart_braintr
         '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_zip'),
         '#description' => t('Check this box to collect zip codes.  Uncheck to leave the zip code box off of the checkout form.')
     );
+    
+    $form['basic_cart_braintree_country'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Country?'),
+        '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_country'),
+        '#description' => t('Check this box to collect countries.  Uncheck to leave the country box off of the checkout form.')
+    );
 
+    $form['basic_cart_braintree_comment'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Comment?'),
+        '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_comment'),
+        '#description' => t('Check this box to collect customer comments.  Uncheck to leave the customer comment box off of the checkout form.')
+    );
+    
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
 
@@ -313,10 +327,10 @@ function basic_cart_braintree_admin_checkout() {
     '#title' => t('Admin email'),
     '#type' => 'textarea',
     '#description' => t('This email will be sent to the site administrator just after an order is placed.
-      Availabale tokes: %CUSTOMER_NAME, %CUSTOMER_EMAIL, %CUSTOMER_PHONE, %CUSTOMER_CITY, %CUSTOMER_ZIPCODE, %CUSTOMER_ADDRESS, %CUSTOMER_MESSAGE, %ORDER_DETAILS.'),
+      If you collect these from your customers, you have these available tokens: %CUSTOMER_NAME, %CUSTOMER_EMAIL, %CUSTOMER_PHONE, %CUSTOMER_ADDRESS, %CUSTOMER_ADDRESS2, %CUSTOMER_CITY, %CUSTOMER_STATE, %CUSTOMER_ZIPCODE, %CUSTOMER_COUNTY, %CUSTOMER_COUNTRY, %CUSTOMER_COMMENT, %ORDER_DETAILS'),
     '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_admin_message'),
   );
-
+  
   $form['messages']['basic_cart_braintree_send_user_message'] = array(
     '#title' => t('Send an email to the customer after an order is placed'),
     '#type' => 'checkbox',
@@ -333,7 +347,7 @@ function basic_cart_braintree_admin_checkout() {
   $form['messages']['basic_cart_braintree_user_message'] = array(
     '#title' => t('User email'),
     '#type' => 'textarea',
-    '#description' => t('This email will be sent to the user just after an order is placed. Availabale tokes: %CUSTOMER_NAME, %CUSTOMER_EMAIL, %CUSTOMER_PHONE, %CUSTOMER_ADDRESS, %CUSTOMER_MESSAGE, %ORDER_DETAILS'),
+    '#description' => t('This email will be sent to the user just after an order is placed. If you collect these from your customers, you have these available tokens: %CUSTOMER_NAME, %CUSTOMER_EMAIL, %CUSTOMER_PHONE, %CUSTOMER_ADDRESS, %CUSTOMER_ADDRESS2, %CUSTOMER_CITY, %CUSTOMER_STATE, %CUSTOMER_ZIPCODE, %CUSTOMER_COUNTY, %CUSTOMER_COUNTRY, %CUSTOMER_COMMENT, %ORDER_DETAILS'),
     '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_user_message'),
   );
 
@@ -357,8 +371,30 @@ function basic_cart_braintree_admin_checkout() {
     '#default_value' => config_get('basic_cart_braintree.settings', 'basic_cart_braintree_thank_you_message'),
   );
 
-  return system_settings_form($form);
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
+
+  return $form;
 }
+
+
+/**
+ * Callback submit function for the settings page.
+ */
+function basic_cart_braintree_admin_checkout_submit($form, &$form_state) {
+  // Remove internal Form API values.
+unset($form_state['values']['form_id'], $form_state['values']['form_token'], $form_state['values']['form_build_id'], $form_state['values']['op']);
+  // Save other variables.
+  foreach ($form_state['values'] as $key => $value) {
+    if (is_array($value) && isset($form_state['values']['array_filter'])) {
+      $value = array_keys(array_filter($value));
+    }
+config_set('basic_cart_braintree.settings', $key, $value);
+  }
+
+backdrop_set_message(t('The configuration options have been saved.'));
+}
+
 
 /**
  * Callback validation function for the settings page.

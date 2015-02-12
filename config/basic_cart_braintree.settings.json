@@ -25,6 +25,8 @@
     "basic_cart_braintree_county": "",
     "basic_cart_braintree_state": "",
     "basic_cart_braintree_zip": "",
+    "basic_cart_braintree_country": "",
+    "basic_cart_braintree_comment": "",
     "basic_cart_braintree_admin_emails": "",
     "basic_cart_braintree_admin_subject": "New order placed",
     "basic_cart_braintree_admin_message": "",

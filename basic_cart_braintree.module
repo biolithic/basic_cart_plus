@@ -45,8 +45,8 @@ function basic_cart_braintree_init()
 {
 require_once 'lib/Braintree.php';
 
-    if (arg(0) == 'admin' && arg(1) == 'config' && arg(2) == 'services' && arg(3) == 'paywallbraintree') {
-        $testvariable = config_get('paywallbraintree.settings', 'paywallbraintree_sslmessage');
+    if (arg(0) == 'admin' && arg(1) == 'config' && arg(2) == 'services' && arg(3) == 'basic_cart_braintree') {
+        $testvariable = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_sslmessage');
         if ($testvariable > 0) {
             global $base_root;
             if (!stristr($base_root, "https")) {
@@ -244,7 +244,7 @@ function basic_cart_braintree_block_view($delta = '') {
           'price' => $total,
         );
         // Checking the VAT.
-        $vat_is_enabled = (int)config_get('paywallbraintree.settings', 'basic_cart_braintree_vat_state');
+        $vat_is_enabled = (int)config_get('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state');
 
         if (!empty ($vat_is_enabled) && $vat_is_enabled) {
           $options['vat'] = basic_cart_braintree_price_format($price->vat);
@@ -275,7 +275,7 @@ function basic_cart_braintree_is_product($node) {
  * Helper function. Returns an array of basic_cart_braintree product (content) types.
  */
 function basic_cart_braintree_product_types(){
-  return config_get('paywallbraintree.settings', 'basic_cart_braintree_content_types');
+  return config_get('basic_cart_braintree.settings', 'basic_cart_braintree_content_types');
 }
 
 /**
@@ -313,7 +313,7 @@ function basic_cart_braintree_readme_view()
     $build = array(
         'render_array_paragraph' => array(
             '#type' => 'markup',
-            '#markup' => '<h2>Congradulations on installing the basic_cart_braintree module.</h2><p>This is an e-commerce module for processing payment using braintreepayments.com for membership to access content on your Drupal 7 site, if you do not feel like using an entire store like Ubercart or Commerce.'
+            '#markup' => '<h2>Congradulations on installing the basic_cart_braintree module.</h2><p>This is an e-commerce module for processing payment using braintreepayments.com for membership to sell simple products on your Backdrop site, if you do not feel like using an entire store like Ubercart or Commerce.'
         ),
         'why_render_arrays' => array(
             '#items' => array(
@@ -322,45 +322,35 @@ function basic_cart_braintree_readme_view()
                 '- This does not work with other payment gateways such as Paypal or Authorize.net',
                 '- The goal is just a simple, quick loading solution',
                 '- This requires Javascript to be enabled at all times to function',
-                '- Braintree Payments processor and this module do not interact with your Drupal site in regards to credit card information',
+                '- Braintree Payments processor and this module do not interact with your Backdrop site in regards to credit card information',
                 '',
                 'Installing',
-                '1) Install the module Libraries in /sites/all/modules like all other modules',
-                '2) Visit https://github.com/braintree/braintree_php .  <a href="https://github.com/braintree/braintree_php">Download the and unzip the library</a>, then place the contents of that directory in sites/all/libraries/braintree, so that it can access sites/all/libraries/braintree/lib/braintree-php-2.10.0/Braintree.php',
-                '3) Visit the status report at admin/reports/status and when it says Braintree PHP Library is in place. Version xxx, you are ready to go.',
-                '4) Install and enable this module in /sites/all/modules like all other modules',
+                '- Install and enable this module in /sites/all/modules like all other modules',
                 '',
                 'Configuring',
                 '- Set up your banking information and get approved at braintreepayments.com - this will take a day or week',
                 '- Open the webpage admin/config/services/basic_cart_braintree and enter your Braintree account details and options',
                 '- Braintree will give you a test key pair to test with, so enter these in, DO NOT check the live? box, and click save',
-                '- When site users view a node (automatic summary) of that type, they can immediately click the checkout button to purchase it on site with their credit card.',
-                ' - If they buy a membership, they can then view all full nodes of that content type.',
                 '',
                 'Testing',
-                '- Open the webpage startreading and select a book and then a chapter from that book',
-                '- There will be a button telling you to buy now at the bottom of the page.  Click it.',
-                '- Enter in user information...',
                 '- Use credit card number 4242424242424242 and cvc number 123 to test.',
-                '- Hopefully it worked without much hoopla!',
-                '- Visit https://braintreepayments.com/, sign in, go to your reports, and you should see your credit card transaction show up.',
-                '- Open the webpage admin/config/services/basic_cart_braintree and enter your LIVE Braintree details, check the live? box and click save',
-                '- Repeat the above steps with your live account info from Braintree (and small amounts of money to test).',
-                '- You are now open for business!',
-                '- Drupal does not receive or save any transaction info!',
+                '- Backdrop does not receive or save any transaction info!',
                 '- This is a basic starter kit with which you can alter to your liking',
                 '',
                 'Reports',
-                '- You should make views using the Views module for reporting.  You should look up users with role paywall_member.',
+                '- You should make views using the Views module for reporting for content type Order',
                 '',
                 'Uninstalling',
-                '- Uninstalling this module removes all of your info from Drupal!  Not from braintreepayments.com, however.',
+                '- Uninstalling this module removes all of your info from Backdrop!  Not from braintreepayments.com, however.',
                 '',
                 'Security',
                 '- You should probably get your website hosting company to install SSL on your server for customer trust/confidence.  It may not be demanded, though.  For more information, please read https://www.braintreepayments.com/faq .',
                 '',
                 'To Do:',
-                '- more configuration/integration.'
+                '- more configuration/integration. The following links are probably beneficial to you:',
+                'Need merchandise? http://www.cafepress.com/make/personalized-gifts',
+                'Need delivery?  https://app.wedeliver.us/merchant/apply/begin',
+                'Need bitcoin acceptance?  http://www.programmableweb.com/news/pay-bitcoin-braintrees-bitcoin-api/elsewhere-web/2015/01/27',
             ),
             '#title' => 'How to use:',
             '#theme' => 'item_list'

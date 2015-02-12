@@ -2,23 +2,8 @@
 
 /**
  * @file
- * Basic cart install file
+ * Basic cart Braintree install file
  */
-
-/**
- * Default currency.
- */
-define('BASIC_CART_DEFAULT_CURRENCY', 'USD');
-
-/**
- * Default VAT state (enabled/disabled).
- */
-define('BASIC_CART_VAT_STATE', FALSE);
-
-/**
- * Default VAT value. Zero by default.
- */
-define('BASIC_CART_VAT_VALUE', '');
 
 /**
  * Implements hook_install().
@@ -50,8 +35,8 @@ config_set('basic_cart_braintree.settings', 'basic_cart_braintree_thank_you_mess
 config_set('basic_cart_braintree.settings', 'basic_cart_braintree_redirect_user_after_add_to_cart', '<none>');
 
 // Setting the VAT default state and value.
-  config_set('basic_cart_braintree.settings', 'basic_cart_vat_state', BASIC_CART_VAT_STATE);
-  config_set('basic_cart_braintree.settings', 'basic_cart_vat_value', BASIC_CART_VAT_VALUE);
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state', FALSE);
+config_set('basic_cart_braintree.settings', 'basic_cart_braintree_vat_value', '');
 
   // Check to see if the price field already exists.
   $field = field_info_field('price');
@@ -70,7 +55,7 @@ config_set('basic_cart_braintree.settings', 'basic_cart_braintree_redirect_user_
  * Implements hook_uninstall().
  */
 function basic_cart_braintree_uninstall() {
-  // Delete the price field.
+  // Delete the price field from the content types associated.
   $types = config_get('basic_cart_braintree.settings', 'basic_cart_braintree_content_types');
   if (is_array($types)) {
     // Foreach selected content type, delete the price field.
@@ -88,6 +73,5 @@ function basic_cart_braintree_uninstall() {
   // Purge all field infromation
     // http://api.drupal.org/api/function/field_purge_batch/7
     field_purge_batch(1000);
-    drupal_flush_all_caches();
-
+    backdrop_flush_all_caches();
 }

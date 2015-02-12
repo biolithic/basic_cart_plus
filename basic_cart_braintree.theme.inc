@@ -58,7 +58,7 @@ function theme_basic_cart_braintree_cart_total_price($variables) {
   $html .= '  <div class="basic-cart-total-price cell">' . t('Total price') . ': <strong>' . $total . '</strong></div>';
   $html .= '</div>';
   
-  $vat_is_enabled = (int)config_get('paywallbraintree.settings', 'basic_cart_braintree_vat_state');
+  $vat_is_enabled = (int)config_get('basic_cart_braintree.settings', 'basic_cart_braintree_vat_state');
   
   if (!empty ($vat_is_enabled) && $vat_is_enabled) {
     $vat_value = basic_cart_braintree_price_format($price->vat);
@@ -80,16 +80,11 @@ function theme_basic_cart_braintree_render_cart_element($variables) {
   if (empty($nid)) {
     return '';
   }
-  // Delete image.
-  $vars = array(
-    'path' => base_path() . drupal_get_path('module', 'basic_cart_braintree') . '/images/delete2.png',
-    'alt' => t('Remove from cart'),
-    'title' => t('Remove from cart'),
-    'attributes' => array('class' => 'basic-cart-delete-image-image'),
-  );
-  $delete_link = l(theme('image', $vars), 'cart/remove/' . $nid, array('html' => TRUE));
+  
+  $delete_link = "<a href='cart/remove/' title='Remove product from cart'><img alt='Remove product from cart' class='basic-cart-delete-image-image' src='" . base_path() . drupal_get_path('module', 'basic_cart_braintree') . "/images/delete2.png'></a>";
   // Getting the node for it's title and description.
-  $node = basic_cart_braintree_get_cart($nid);
+  // $node = basic_cart_braintree_get_cart($nid);
+  $node = node_load($nid);
   // Node description.
   $desc = '';
   if (isset($node->basic_cart_braintree_node_description)) {
@@ -97,7 +92,7 @@ function theme_basic_cart_braintree_render_cart_element($variables) {
                 truncate_utf8($node->basic_cart_braintree_node_description, 50) : $node->basic_cart_braintree_node_description;
   }
   // Price and currency.
-  $unit_price = isset($node->basic_cart_braintree_unit_price) ? $node->basic_cart_braintree_unit_price : 0;
+  $unit_price = isset($node->price["und"][0]["value"]) ? $node->price["und"][0]["value"] : 0;
   $unit_price = basic_cart_braintree_price_format($unit_price);
   
   // Prefix.

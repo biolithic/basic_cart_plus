@@ -1,6 +1,6 @@
 name = Basic Cart Braintree Order
 description = Stores every basic cart order in the database.
-package = PAYMENTS
+package = Basic Cart
 version = BACKDROP_VERSION
 backdrop = 1.x
 dependencies[] = basic_cart_braintree
