@@ -81,11 +81,11 @@ function theme_basic_cart_braintree_render_cart_element($variables) {
     return '';
   }
   
-  $delete_link = "<a href='cart/remove/' title='Remove product from cart'><img alt='Remove product from cart' class='basic-cart-delete-image-image' src='" . base_path() . drupal_get_path('module', 'basic_cart_braintree') . "/images/delete2.png'></a>";
   // Getting the node for it's title and description.
   // $node = basic_cart_braintree_get_cart($nid);
   $node = node_load($nid);
   // Node description.
+  $delete_link = "<a href='cart/remove/" . $node->nid . "' title='Remove product from cart'><img alt='Remove product from cart' class='basic-cart-delete-image-image' src='" . base_path() . backdrop_get_path('module', 'basic_cart_braintree') . "/images/delete2.png'></a>";
   $desc = '';
   if (isset($node->basic_cart_braintree_node_description)) {
     $desc = drupal_strlen($node->basic_cart_braintree_node_description) > 50 ?
