@@ -1,0 +1,16 @@
+name = Basic Cart Plus
+description = A basic, direct shopping cart implementation using PayPal, Braintree or Stripe payments to process payment
+package = Basic Cart
+backdrop = 1.x
+version = 1.x-1.1
+type = module
+stylesheets[all][] = basic_cart_plus.css
+configure = admin/config/basic_cart_plus/settings
+dependencies[]  = elements
+dependencies[]  = libraries
+dependencies[]  = form_validation_scripts
+
+; Views handlers
+files[] = views/basic_cart_braintree_handler_field_price.inc
+files[] = views/basic_cart_braintree_handler_field_addtocart.inc
+files[] = views/basic_cart_braintree_handler_filter_product.inc

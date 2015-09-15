@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * Basic Cart Plus Braintree module file.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function basic_cart_plus_braintree_libraries_info()
+{
+    $libraries['braintree'] = array(
+        'name' => 'BrainTree Payment API PHP Library',
+        'vendor url' => 'https://www.braintreepayments.com/docs/php',
+        'download url' => 'https://github.com/braintree/braintree_php',
+        'version arguments' => array(
+            'file' => 'CHANGELOG.md',
+            'pattern' => '/^##\s+(.+)$/',
+            'lines' => 1
+        ),
+        'files' => array(
+            'php' => array(
+                'lib/Braintree.php'
+            )
+        )
+    );
+
+    return $libraries;
+}
+
+/**
+ * Implements hook_init() to run on every page.
+ */
+function basic_cart_plus_braintree_init()
+{
+    $library = libraries_load('braintree');
+    if (($library = libraries_load('braintree')) && !empty($library['loaded'])) {
+        return TRUE;
+    } else {
+        backdrop_set_message("You have enabled the Basic Cart Plus module without adding the Braintree Payments processing library.  Please visit the status report to learn more.", "error");
+    }
+}

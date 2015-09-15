@@ -1,0 +1,9 @@
+name = Basic Cart Plus Stripe
+description = The Stripe Payments plugin for Basic Cart Plus
+package = Basic Cart
+version = BACKDROP_VERSION
+backdrop = 1.x
+type = module
+dependencies[]  = basic_cart_plus
+dependencies[]  = libraries
+dependencies[]  = elements

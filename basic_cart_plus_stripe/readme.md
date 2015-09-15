@@ -1,8 +1,5 @@
-BASIC CART PLUS
-------------------------
-
-This Backdrop CMS module is not working and not secure yet.  Please do not use for handling credit cards.
-I am making an attempt to finish this in 9/15.  Thank you!
+BASIC CART BRAINTREE
+===================
 
 CONTENTS OF THIS FILE
 ---------------------
@@ -22,56 +19,52 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 
-Basic cart is a very simple shopping cart / checkout process for Backdrop, that just sends 2 emails after each order. Along with the shopping cart,
+Basic cart is a very simple shopping cart / checkout process for Backdrop,
+that just sends 2 emails after each order. Along with the shopping cart,
 this module also provides a block where you can view your cart's content.
 
-You can sell existing nodes as physical products, nodes as donation forms, nodes as events (or virtual products), roles as memberships, roles as subscriptions through a built in
-Paypal, Braintree or Stripe payment processors.  Both Javascript (IFrame) and PHP payment forms are available through admin checkboxes.  You can also choose to forego the processor -- for example, "pay in person when you pick it up or attend".
-
-Backdrop's taxonomy system is your product categories, and Backdrop's Views are your reporting system.  It will also save all order/customer information to the payment processor because they have better reporting/admin experience than building our own.
-
+This is the Basic Cart e-commerce module with Braintree Payments credit card processing built into the admin/checkout process.
 The basic idea is that you want to sell a small number of products and just want a install-the-module-and-process-cards experience.
-To support more options... you probably should not use this module or fork it and make it your own.  Drupal Commerce, Ebay, Magento, Shopify might be for you!
+To support multiple payment types, etc... you probably should not use this module or fork it and make it your own.
+
+It's ideal for small websites with only a few products or other content types
+being sold, for example touristic offers.  It is much simpler to get started for simple or few products.
 
 Features
 
-* The possibility of choosing the content types that can be added to the cart or marked for "insider content".
+* The possibility of choosing the content types that can be added to the cart.
 * The possibility of sending, or not, an email to the customer once an order is placed.
 * Custom email messages for both the site administrator and the customer, along with the order details.
 * A block with the contents of your shopping cart.
-* Order details can be saved in two places: in a receipt node, and to the processor
 
 TESTED
 -----
 
-Not working yet securely yet.
+Working on Backdrop 1.0. Will resolve to iron out bugs -- probably beta stage.
 
 KNOWN ISSUES
 ---------------------
 
-need to incorporate Stripe Iframe solution securely.
-need to save all Braintree and Paypal account/order information on checkout
+@todo
 
 SPECIAL THANKS
 --------------
 
-- biolithic for the vision and completion
 - dicix <https://www.drupal.org/u/dicix>
 - Jen Lampton <https://www.drupal.org/u/jenlampton>
+
 
 REQUIREMENTS
 ------------
 
-elements
-form validation scripts
-libraries
-existing nodes/content types
-Paypal, Braintree or Stripe merchant accounts and PHP SDK's if you so choose to use them
+none
 
 INSTALLATION
 ------------
 
 Install this module using the official Backdrop CMS instructions at https://backdropcms.org/guide/modules
+
+Because the libraries module/concept is not yet set or taught, the actual Braintree code library is packaged with this module until a 3rd-party code library is agreed upon in Backdrop.
 
 COMING FROM DRUPAL?
 -------------------
@@ -89,7 +82,7 @@ Basic Cart for Backdrop stores node id's as strings in the user $_SESSION variab
 PERMISSIONS
 ------------
 
-installs a membership role for you to use
+@todo
 
 
 USAGE

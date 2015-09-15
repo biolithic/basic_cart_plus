@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * Basic Cart Plus Stripe module file.
+ */
+/**
+ * Implements hook_libraries_info().
+ */
+function basic_cart_plus_stripe_libraries_info()
+{
+    $libraries['stripe'] = array(
+        'name' => 'Stripe Payment API PHP Library',
+        'vendor url' => 'https://stripe.com/docs/libraries',
+        'download url' => 'https://stripe.com/docs/libraries#php-library',
+        'version arguments' => array(
+            'file' => 'CHANGELOG.md',
+            'pattern' => '/^###\s+(.+)$/',
+            'lines' => 1
+        ),
+        'files' => array(
+            'php' => array(
+                'init.php'
+            )
+        )
+    );
+    return $libraries;
+}
+/**
+ * Implements hook_init() to run on every page.
+ */
+function basic_cart_plus_stripe_init()
+{
+    $library = libraries_load('stripe');
+    if (($library = libraries_load('stripe')) && !empty($library['loaded'])) {
+        return TRUE;
+    } else {
+        backdrop_set_message("You have enabled the Basic Cart Plus module without adding the Stripe Payments processing library.  Please visit the status report to learn more.", "error");
+    }
+}

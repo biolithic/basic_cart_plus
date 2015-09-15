@@ -1,0 +1,555 @@
+<?php
+/**
+ * @file
+ * Basic Cart Plus install file
+ */
+/**
+ * Implements hook_install().
+ */
+function basic_cart_plus_install()
+{
+    $t = get_t();
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_admin_subject', $t('New order placed'));
+    $default_admin_message = $t('Hi,
+An order was placed by %CUSTOMER_NAME (%CUSTOMER_EMAIL)
+Here are the order details:
+%ORDER_DETAILS');
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_admin_message', $default_admin_message);
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_user_subject', $t('New order placed'));
+    $default_user_message = $t('Hi,
+You just placed an order on the website @sitename. Here are the order details:
+%ORDER_DETAILS
+We will contact you as soon as possible.', array(
+        '@sitename' => config_get('system.core', 'site_name')
+    ));
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_user_message', $default_user_message);
+    $default_thank_you_title = $t("Thank you.");
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_thank_you_title', $default_thank_you_title);
+    $default_thank_you_message = $t("Thank you for placing an order on our website.\nWe will contact you as soon as possible.");
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_thank_you_message', $default_thank_you_message);
+    // Redirect url after add to cart.
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_redirect_user_after_add_to_cart', '<none>');
+    // Setting the VAT default state and value.
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_vat_state', FALSE);
+    config_set('basic_cart_plus.settings', 'basic_cart_plus_vat_value', '');
+    // Check to see if the price field already exists.
+    $field = field_info_field('price');
+    // If the price field does not exist then create it.
+    if (empty($field)) {
+        $field = array(
+            'field_name' => 'price',
+            'type' => 'number_decimal',
+            'entity_types' => array(
+                'node'
+            )
+        );
+        field_create_field($field);
+    }
+    // // // // 14 user fields
+    // 1
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_firstname')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_firstname',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_firstname',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart First Name',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 2
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_lastname')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_lastname',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_lastname',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Last Name',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 3
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_phone')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_phone',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_phone',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Phone',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 4
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_address')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_address',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_address',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Address 1',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 5
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_address2')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_address2',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_address2',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Address 2',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 6
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_city')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_city',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_city',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart City',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 7
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_state')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_state',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_state',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart State',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 8
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_zip')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_zip',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_zip',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Zip',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 9
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_county')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_county',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_county',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart County',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 10
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_country')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_country',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_country',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Country',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 11
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_company')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_company',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_company',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Company',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 12
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_website')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_website',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_website',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Website',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 13
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_b_id')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_b_id',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_b_id',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Customer ID',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+    // 14
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_s_id')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_s_id',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_s_id',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Customer ID',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '1'
+            )
+        );
+        field_create_instance($instance);
+    }
+}
+/**
+ * Implements hook_uninstall().
+ */
+function basic_cart_plus_uninstall()
+{
+    // Delete the price field from the content types associated.
+    $types = config_get('basic_cart_plus.settings', 'basic_cart_plus_content_types');
+    if (is_array($types)) {
+        // Foreach selected content type, delete the price field.
+        foreach ($types as $type => $checked) {
+            if (!empty($checked)) {
+                $instance = array(
+                    'field_name' => 'price',
+                    'entity_type' => 'node',
+                    'bundle' => $type
+                );
+                field_delete_instance($instance);
+            }
+        }
+    }
+    // $users = entity_load('user');
+    // $arrayuids = array();
+    // foreach ($users as $user)
+    // {
+    // }
+    $fieldname = "basic_cart_plus_firstname";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_lastname";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_phone";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_address";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_address2";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_city";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_state";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_zip";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_county";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_country";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_company";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_website";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_braintree_id";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    $fieldname = "basic_cart_plus_stripe_id";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+    // Purge all field infromation
+    // http://api.drupal.org/api/function/field_purge_batch/7
+    field_purge_batch(1000);
+    backdrop_flush_all_caches();
+}
