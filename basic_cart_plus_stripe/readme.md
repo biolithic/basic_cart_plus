@@ -1,5 +1,5 @@
-BASIC CART BRAINTREE
-===================
+BASIC CART PLUS STRIPE
+---------------------
 
 CONTENTS OF THIS FILE
 ---------------------
@@ -19,52 +19,39 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 
-Basic cart is a very simple shopping cart / checkout process for Backdrop,
-that just sends 2 emails after each order. Along with the shopping cart,
-this module also provides a block where you can view your cart's content.
-
-This is the Basic Cart e-commerce module with Braintree Payments credit card processing built into the admin/checkout process.
-The basic idea is that you want to sell a small number of products and just want a install-the-module-and-process-cards experience.
-To support multiple payment types, etc... you probably should not use this module or fork it and make it your own.
-
-It's ideal for small websites with only a few products or other content types
-being sold, for example touristic offers.  It is much simpler to get started for simple or few products.
-
-Features
-
-* The possibility of choosing the content types that can be added to the cart.
-* The possibility of sending, or not, an email to the customer once an order is placed.
-* Custom email messages for both the site administrator and the customer, along with the order details.
-* A block with the contents of your shopping cart.
+Basic Cart Plus is made with a separated architecture so that if you just need a cart/checkout flow, don't enable any bundled modules.  If you would like the payment processor Stripe added to the cart/checkout flow, enable this module.
 
 TESTED
------
+-------
 
-Working on Backdrop 1.0. Will resolve to iron out bugs -- probably beta stage.
+Working, but not working yet securely yet.
 
 KNOWN ISSUES
 ---------------------
 
-@todo
+need to incorporate Stripe Iframe solution securely.
+need to save all Braintree and Paypal account/order information on checkout
 
 SPECIAL THANKS
 --------------
 
+- biolithic for the vision and completion
 - dicix <https://www.drupal.org/u/dicix>
 - Jen Lampton <https://www.drupal.org/u/jenlampton>
-
 
 REQUIREMENTS
 ------------
 
-none
+elements
+form validation scripts
+libraries
+existing nodes/content types
+Paypal, Braintree or Stripe merchant accounts and PHP SDK's if you so choose to use them
 
 INSTALLATION
 ------------
 
 Install this module using the official Backdrop CMS instructions at https://backdropcms.org/guide/modules
-
-Because the libraries module/concept is not yet set or taught, the actual Braintree code library is packaged with this module until a 3rd-party code library is agreed upon in Backdrop.
 
 COMING FROM DRUPAL?
 -------------------
@@ -82,7 +69,7 @@ Basic Cart for Backdrop stores node id's as strings in the user $_SESSION variab
 PERMISSIONS
 ------------
 
-@todo
+installs a membership role for you to use
 
 
 USAGE

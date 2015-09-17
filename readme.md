@@ -42,9 +42,9 @@ Features
 * Order details can be saved in two places: in a receipt node, and to the processor
 
 TESTED
------
+-------
 
-Not working yet securely yet.
+Working, but not working yet securely yet.
 
 KNOWN ISSUES
 ---------------------
