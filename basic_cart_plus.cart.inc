@@ -863,7 +863,7 @@ function basic_cart_plus_sanitize_data($billing_values)
         if (isset($user->field_basic_cart_plus_phone[$user->langcode])) {
             $phone = $user->field_basic_cart_plus_phone[$user->langcode][0]['value'];
         } else {
-            $phone = "default";
+            $phone = "123";
         }
     }
     $user->field_basic_cart_plus_phone[$user->langcode][0]['value'] = $phone;
@@ -933,7 +933,7 @@ function basic_cart_plus_sanitize_data($billing_values)
         if (isset($user->field_basic_cart_plus_zip[$user->langcode])) {
             $zip = $user->field_basic_cart_plus_zip[$user->langcode][0]['value'];
         } else {
-            $zip = "default";
+            $zip = "123";
         }
     }
     $user->field_basic_cart_plus_zip[$user->langcode][0]['value'] = $zip;
@@ -961,7 +961,7 @@ function basic_cart_plus_sanitize_data($billing_values)
         if (isset($user->field_basic_cart_plus_country[$user->langcode])) {
             $country = $user->field_basic_cart_plus_country[$user->langcode][0]['value'];
         } else {
-            $country = "default";
+            $country = "USA";
         }
     }
     $user->field_basic_cart_plus_country[$user->langcode][0]['value'] = $country;
@@ -989,7 +989,7 @@ function basic_cart_plus_sanitize_data($billing_values)
         if (isset($user->field_basic_cart_plus_website[$user->langcode])) {
             $website = $user->field_basic_cart_plus_website[$user->langcode][0]['value'];
         } else {
-            $website = "default";
+            $website = "http://www.example.com";
         }
     }
     $user->field_basic_cart_plus_website[$user->langcode][0]['value'] = $website;
@@ -998,6 +998,9 @@ function basic_cart_plus_sanitize_data($billing_values)
         $comment = filter_var($billing_values['billing']['comment'], FILTER_SANITIZE_STRING);
         // $comment = filter_var($comment, FILTER_SANITIZE_ENCODED);
         $comment = filter_var($comment, FILTER_SANITIZE_SPECIAL_CHARS);
+    }
+    else {
+        $comment = "default";
     }
 
     $user->save();
@@ -1201,7 +1204,7 @@ function basic_cart_plus_mail_order($comment, $total_price)
         $message_html           = str_replace($search, $replace, $message_html);
         $params['user_message'] = $message_html;
         // Sending mail.
-        $message                = backdrop_mail('basic_cart_plus', 'user_mail', $email, language_default(), $params);
+        $message                = backdrop_mail('basic_cart_plus', 'user_mail', $user->mail, language_default(), $params);
         if ($message['result']) {
             $mails_sent++;
         }
@@ -1215,7 +1218,7 @@ function basic_cart_plus_mail_order($comment, $total_price)
     if ($testvariable > 0) {
         $module                   = 'basic_cart_plus';
         $key                      = 'key';
-        $to                       = $email;
+        $to                       = $user->mail;
         $language                 = language_default();
         $params                   = array();
         $from                     = NULL;

@@ -150,7 +150,7 @@ function basic_cart_plus_order_register_order($comment)
         'type' => 'order'
     ));
     $node->uid      = $user->uid;
-    $node->title    = $email . " " . REQUEST_TIME;
+    $node->title    = $user->mail . " " . REQUEST_TIME;
     $node->language = LANGUAGE_NONE;
     // Body.
     if (isset($comment)) {

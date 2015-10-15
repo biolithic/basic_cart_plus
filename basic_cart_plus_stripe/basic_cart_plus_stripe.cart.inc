@@ -14,6 +14,7 @@
  *
  * @return array
  *   return form and form_state arrays.
+
  */
 function basic_cart_plus_stripe_form_payment($form, $form_state)
 {
@@ -117,14 +118,18 @@ function basic_cart_plus_stripe_form_payment($form, $form_state)
             )
         )
     );
-    $form['back']                              = array(
-        '#type' => 'submit',
+    $form['backbutton']['back'] = array(
+        '#type' => 'button',
         '#value' => t('<< Back'),
+        '#name' => 'backbutton',
+        '#executes_submit_callback' => TRUE,
+        '#button_type' => 'button',
         '#submit' => array(
             'basic_cart_plus_form_back'
         ),
         '#limit_validation_errors' => array()
     );
+    
     $one                                       = config_get('basic_cart_plus.settings', 'basic_cart_plus_stripe_publishable_testkey');
     $two                                       = config_get('basic_cart_plus.settings', 'basic_cart_plus_stripe_publishable_livekey');
     $three                                     = config_get('basic_cart_plus.settings', 'basic_cart_plus_stripe_gonelive');
@@ -165,8 +170,13 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
 
     // Assign billing data for easier referencing.
     $billing_values = $form_state['page_values']['1'];
-    $comment        = basic_cart_plus_sanitize_data($billing_values);
-
+    $comment = basic_cart_plus_sanitize_data($billing_values);
+    global $user;
+    $current_user = user_load($user->uid);
+    $userroles = array();
+    if (isset($current_user->roles)) {
+    $userroles = $current_user->roles;
+    }
     $order_details  = '';
     $cart           = basic_cart_plus_get_cart();
     $price          = basic_cart_plus_get_total_price();
@@ -180,14 +190,13 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
     foreach ($cart as $cid => $value) {
         if (is_numeric($cid)) {
             $node = node_load($cart[$value]);
-
-
+            
             foreach (array_keys(node_type_get_names()) as $term) {
                 $testvariable = "paywall_member_" . $term;
                 $isenabled    = config_get('basic_cart_plus.settings', $testvariable);
-                if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
+                if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $userroles)) {
                     $basic_cart_plus_paywall_price = config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
-                    $order_details .= ++$i . ". " . $node->title . "\t 1 x " . $unit_price . "\n";
+                    $order_details .= ++$i . ". " . $node->title . "\t 1 x " . $basic_cart_plus_paywall_price . "\n";
                     $sitemembership = "yes";
                 }
             }
@@ -196,7 +205,6 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
                 $unit_price = basic_cart_plus_price_format($node->price["und"][0]["value"]);
                 $order_details .= ++$i . '. ' . $node->title . "\t" . $_SESSION['basic_cart_plus']['cart'][$cid . 'quantity'] . ' x ' . $unit_price . "\n";
             }
-
 
         }
     }
@@ -209,7 +217,6 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
         $order_details .= "Total VAT: " . $vat;
     }
     $total_price = $total_price * 100;
-
 
     $token = $form_state['values']['stripetoken'];
     try {
@@ -227,7 +234,7 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
 
 
         if (empty($stripecustomerid)) {
-            $stripecustomer                                                                = \Stripe\Customer::create(array(
+            $stripecustomer = \Stripe\Customer::create(array(
                 "source" => $token,
                 "description" => $billing_values['billing']['email'],
                 "email" => $billing_values['billing']['email']
@@ -235,6 +242,7 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
             ));
             $current_user->field_basic_cart_plus_s_id[$current_user->langcode][0]['value'] = $stripecustomer->id;
             $current_user->save();
+            $stripecustomer   = \Stripe\Customer::retrieve($stripecustomer->id);
         } else {
         }
 
@@ -245,31 +253,40 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
             "customer" => $stripecustomer->id
         ));
 
+        backdrop_set_message("Transaction success!");
+        if (isset($sitemembership)) {
         $uid = $user->uid; // User ID of user that you want to add role to.
-        user_multiple_role_edit(array(
-            $uid
-        ), 'add_role', "paywall_member");
+        user_multiple_role_edit(array($uid), 'add_role', "paywall_member");
+        backdrop_set_message("You have now gained content membership!");
+        }
 
         $name = $current_user->field_basic_cart_plus_firstname[$current_user->langcode][0]['value'] . " " . $current_user->field_basic_cart_plus_lastname[$current_user->langcode][0]['value'];
-
+        
+        if (isset($stripecustomer))
+        {
         $stripecustomer->description                    = $current_user->mail;
         $stripecustomer->email                          = $current_user->mail;
-        $stripecustomer->sources->data->name            = $name;
-        $stripecustomer->sources->data->address_line1   = $current_user->field_basic_cart_address[$current_user->langcode][0]['value'];
-        $stripecustomer->sources->data->address_line2   = $current_user->field_basic_cart_address2[$current_user->langcode][0]['value'];
-        $stripecustomer->sources->data->address_city    = $current_user->field_basic_cart_plus_city[$current_user->langcode][0]['value'];
-        $stripecustomer->sources->data->address_state   = $current_user->field_basic_cart_plus_state[$current_user->langcode][0]['value'];
-        $stripecustomer->sources->data->address_zip     = $current_user->field_basic_cart_plus_s_zip[$current_user->langcode][0]['value'];
-        $stripecustomer->sources->data->address_country = $current_user->field_basic_cart_plus_s_country[$current_user->langcode][0]['value'];
+        $stripecustomer->source['object']               = "card";
+        // $stripecustomer->source['number']               = "card";
+        // $stripecustomer->source['exp_month']               = "card";
+        // $stripecustomer->source['exp_year']               = "card";
+        // $stripecustomer->source['cvc']               = "card";
+        $stripecustomer->source['name']               = $name;;
+        $stripecustomer->source['address_line1']   = $current_user->field_basic_cart_address[$current_user->langcode][0]['value'];
+        $stripecustomer->source['address_line2']   = $current_user->field_basic_cart_address2[$current_user->langcode][0]['value'];
+        $stripecustomer->source['address_city']    = $current_user->field_basic_cart_plus_city[$current_user->langcode][0]['value'];
+        $stripecustomer->source['address_state']   = $current_user->field_basic_cart_plus_state[$current_user->langcode][0]['value'];
+        $stripecustomer->source['address_zip']     = $current_user->field_basic_cart_plus_s_zip[$current_user->langcode][0]['value'];
+        $stripecustomer->source['address_country'] = $current_user->field_basic_cart_plus_s_country[$current_user->langcode][0]['value'];
         $stripecustomer->save();
-
+        }
+        
         // Registering the new order to the database.
         if (module_exists('basic_cart_plus_order')) {
             basic_cart_plus_save_order($comment);
         }
 
         basic_cart_plus_mail_order($comment, $total_price);
-
         basic_cart_plus_empty_cart();
         backdrop_goto('checkout/thank-you');
     }

@@ -10,7 +10,7 @@ function basic_cart_plus_stripe_requirements($phase)
 {
     $requirements = array();
     if ($phase == 'runtime') {
-        $requirements['basic_cart_plus_stripe_'] = _basic_cart_plus_stripe_requirement_check();
+        $requirements['basic_cart_plus_stripe'] = _basic_cart_plus_stripe_requirement_check();
     }
     return $requirements;
 }

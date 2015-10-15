@@ -95,7 +95,7 @@ function basic_cart_plus_braintree_form_payment($form, $form_state)
             'preprocess' => FALSE
         ));
 
-        backdrop_add_js("jQuery(document).ready(function () {    alert('hello'); braintree.setup('" . $btClientToken . "', 'dropin', { container: 'braintree' })      });", 'inline');
+        backdrop_add_js("jQuery(document).ready(function () {    braintree.setup('" . $btClientToken . "', 'dropin', { container: 'braintree' })      });", 'inline');
 
     }
     // END IF HERE
@@ -176,13 +176,16 @@ function basic_cart_plus_braintree_form_payment($form, $form_state)
             )
         );
 
-        $form['back'] = array(
-            '#type' => 'submit',
-            '#value' => t('<< Back'),
-            '#submit' => array(
-                'basic_cart_plus_form_back'
-            ),
-            '#limit_validation_errors' => array()
+        $form['backbutton']['back'] = array(
+        '#type' => 'button',
+        '#value' => t('<< Back'),
+        '#name' => 'backbutton',
+        '#executes_submit_callback' => TRUE,
+        '#button_type' => 'button',
+        '#submit' => array(
+            'basic_cart_plus_form_back'
+        ),
+        '#limit_validation_errors' => array()
         );
 
         $one   = config_get('basic_cart_plus.settings', 'basic_cart_plus_braintree_publishable_testkey');
@@ -300,43 +303,44 @@ function basic_cart_plus_braintree_form_callback($form, $form_state, $nonce)
     // Assign billing data for easier referencing.
     $billing_values = $form_state['page_values']['1'];
     $comment = basic_cart_plus_sanitize_data($billing_values);
-
-    $order_details = '';
-    $cart          = basic_cart_plus_get_cart();
-    $price         = basic_cart_plus_get_total_price();
-    $total_price   = basic_cart_plus_price_format($price->total);
-
+    global $user;
+    $current_user = user_load($user->uid);
+    $userroles = array();
+    if (isset($current_user->roles)) {
+    $userroles = $current_user->roles;
+    }
+    $order_details  = '';
+    $cart           = basic_cart_plus_get_cart();
+    $price          = basic_cart_plus_get_total_price();
+    $total_price    = basic_cart_plus_price_format($price->total);
     $vat_is_enabled = (int) config_get('basic_cart_plus.settings', 'basic_cart_plus_vat_state');
     if (!empty($vat_is_enabled) && $vat_is_enabled) {
         $vat = basic_cart_plus_price_format($price->vat);
     }
-
     // Building the order details.
     $i = 0;
-    // Cart elements.
     foreach ($cart as $cid => $value) {
         if (is_numeric($cid)) {
-            $node       = node_load($cart[$value]);
+            $node = node_load($cart[$value]);
+            
+            foreach (array_keys(node_type_get_names()) as $term) {
+                $testvariable = "paywall_member_" . $term;
+                $isenabled    = config_get('basic_cart_plus.settings', $testvariable);
+                if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $userroles)) {
+                    $basic_cart_plus_paywall_price = config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
+                    $order_details .= ++$i . ". " . $node->title . "\t 1 x " . $basic_cart_plus_paywall_price . "\n";
+                    $sitemembership = "yes";
+                }
+            }
 
-global $user;
-foreach (array_keys(node_type_get_names()) as $term) {
-$testvariable = "paywall_member_" . $term;
-$isenabled = config_get('basic_cart_plus.settings', $testvariable);
-if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
-$basic_cart_plus_paywall_price = config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
-$order_details .= ++$i . ". " . $node->title . "\t 1 x " . $unit_price . "\n";
-$sitemembership = "yes";
-}
-}
-
-if (!isset($sitemembership))
-{
-$unit_price = basic_cart_plus_price_format($node->price["und"][0]["value"]);
-$order_details .= ++$i . '. ' . $node->title . "\t" . $_SESSION['basic_cart_plus']['cart'][$cid . 'quantity'] . ' x ' . $unit_price . "\n";
-}
+            if (!isset($sitemembership)) {
+                $unit_price = basic_cart_plus_price_format($node->price["und"][0]["value"]);
+                $order_details .= ++$i . '. ' . $node->title . "\t" . $_SESSION['basic_cart_plus']['cart'][$cid . 'quantity'] . ' x ' . $unit_price . "\n";
+            }
 
         }
     }
+
     $order_details .= "\n";
     $order_details .= "Total price: " . $total_price;
     $vat_is_enabled = (int) config_get('basic_cart_plus.settings', 'basic_cart_plus_vat_state');
@@ -346,10 +350,7 @@ $order_details .= ++$i . '. ' . $node->title . "\t" . $_SESSION['basic_cart_plus
     }
     $total_price = $total_price * 1;
 
-// COMMENT HERE
-
-global $user;
-$current_user = user_load($user->uid);
+// load in if there is an existing Braintree customer account associated with this Backdrop user account
 if (isset($current_user->field_basic_cart_plus_b_id[$current_user->langcode]))
 {
 $braintreeid = $current_user->field_basic_cart_plus_b_id[$current_user->langcode][0]['value'];
@@ -359,67 +360,59 @@ else
 $braintreeid = "123";
 }
 
-
 try {
 $braintreecustomer = Braintree_Customer::find($braintreeid);
-$braintreecustomerid = $customer->id;
+$braintreecustomerid = $braintreecustomer->id;
 
 if (isset($nonce)) {
         $result = Braintree_Transaction::sale(array(
             // 'orderId' => $orderId,
             'amount' => $total_price,
+            'customerId' => $braintreecustomerid,
             'paymentMethodNonce' => $nonce,
             'options' => array(
                 'submitForSettlement' => false,
-                'storeInVaultOnSuccess' => true
+                'storeInVaultOnSuccess' => true,
+                'addBillingAddressToPaymentMethod' => true,
+                'storeShippingAddressInVault' => true
             )
         ));
     } else {
         $result = Braintree_Transaction::sale(array(
             'amount' => $total_price,
+            'customerId' => $braintreecustomerid,
             'creditCard' => array(
                 'number' => $form_state['values']['card'],
                 'expirationMonth' => $form_state['values']['month'],
                 'expirationYear' => $form_state['values']['year']
+            ),
+            'options' => array(
+                'submitForSettlement' => false,
+                'storeInVaultOnSuccess' => true,
+                'addBillingAddressToPaymentMethod' => true,
+                'storeShippingAddressInVault' => true
             )
         ));
     }
 
 if ($result->success) {
-
+backdrop_set_message("Transaction success!  Confirmation ID: " . $result->transaction->_attributes["id"]);
+if (isset($sitemembership)) {
 $uid = $user->uid; // User ID of user that you want to add role to.
 user_multiple_role_edit(array($uid), 'add_role', "paywall_member");
-
-$updateResult = Braintree_Customer::update(
-    $braintreecustomerid,
-    [
-      'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-      'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-      'phone' => $current_user->field_basic_cart_plus_phone[$current_user->langcode]['0']['value'],
-      'website' => $current_user->field_basic_cart_plus_website[$current_user->langcode]['0']['value'],
-      'billingAddress' => [
-            'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-            'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-            'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
-            'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
-            'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
-            'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
-            'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
-            'countryCodeAlpha3' => 'USA',
-            'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
-            'options' => [
-                'updateExisting' => true
-            ]
-        ]
-
-    ]
-);
-
-if ($updateResult->success)
-{
-backdrop_set_message("Order received and processed.  Thank you!");
+backdrop_set_message("You have now gained content membership!");
 }
 
+
+// Registering the new order to the database.
+        if (module_exists('basic_cart_plus_order')) {
+            basic_cart_plus_save_order($comment);
+        }
+
+        basic_cart_plus_mail_order($comment, $total_price);
+
+        basic_cart_plus_empty_cart();
+        backdrop_goto('checkout/thank-you');
 }
 else {
 foreach($result->errors->deepAll() AS $error) {
@@ -430,97 +423,125 @@ backdrop_set_message($error->code . ": " . $error->message . "\n");
 }
 catch(Exception $e) {
 
-backdrop_set_message("Customer not found", "error");
-
 if (isset($nonce)) {
         $result = Braintree_Transaction::sale(array(
             // 'orderId' => $orderId,
             'amount' => $total_price,
+            
+            'customer' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'phone' => $current_user->field_basic_cart_plus_phone[$current_user->langcode]['0']['value'],
+    'fax' => '',
+    'website' => $current_user->field_basic_cart_plus_website[$current_user->langcode]['0']['value'],
+    'email' => $user->mail
+  ],
+  'billing' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
+    'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
+    'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
+    'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
+    'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
+    'countryCodeAlpha2' => 'US'
+  ],
+  'shipping' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
+    'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
+    'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
+    'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
+    'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
+    'countryCodeAlpha2' => 'US'
+  ],
+            
+            
             'paymentMethodNonce' => $nonce,
             'options' => array(
                 'submitForSettlement' => false,
-                'storeInVaultOnSuccess' => true
+                'storeInVaultOnSuccess' => true,
+                'addBillingAddressToPaymentMethod' => true,
+                'storeShippingAddressInVault' => true
             )
         ));
     } else {
         $result = Braintree_Transaction::sale(array(
             'amount' => $total_price,
+            
+            'customer' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'phone' => $current_user->field_basic_cart_plus_phone[$current_user->langcode]['0']['value'],
+    'fax' => '',
+    'website' => $current_user->field_basic_cart_plus_website[$current_user->langcode]['0']['value'],
+    'email' => $user->mail
+  ],
+  'billing' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
+    'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
+    'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
+    'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
+    'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
+    'countryCodeAlpha2' => 'US'
+  ],
+  'shipping' => [
+    'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
+    'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
+    'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value'],
+    'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
+    'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
+    'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
+    'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
+    'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
+    'countryCodeAlpha2' => 'US'
+  ],
+            
             'creditCard' => array(
                 'number' => $form_state['values']['card'],
                 'expirationMonth' => $form_state['values']['month'],
                 'expirationYear' => $form_state['values']['year']
+            ),
+            'options' => array(
+                'submitForSettlement' => false,
+                'storeInVaultOnSuccess' => true,
+                'addBillingAddressToPaymentMethod' => true,
+                'storeShippingAddressInVault' => true
             )
         ));
     }
 
-if ($result->success){
+if ($result->success) {
 
-if (isset($nonce)) {
+global $user;
+$user = user_load($user->uid);
+$user->field_basic_cart_plus_b_id[$user->langcode][0]['value'] = $result->transaction->_attributes["customer"]["id"];
+$user->save();
+backdrop_set_message("Transaction success!  Confirmation ID: " . $result->transaction->_attributes["id"]);
 
-$createresult = Braintree_Customer::create([
-      'paymentMethodNonce' => $nonce,
-      'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-      'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-      'phone' => $current_user->field_basic_cart_plus_phone[$current_user->langcode]['0']['value'],
-      'website' => $current_user->field_basic_cart_plus_website[$current_user->langcode]['0']['value'],
-      'creditCard' => [
-      'options' => [
-                'makeDefault' => true
-            ],
-      'billingAddress' => [
-            'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-            'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-            'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
-            'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
-            'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
-            'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
-            'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
-            'countryCodeAlpha3' => 'USA',
-            'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value']
-        ]
-        ]
-    ]);
-
-if ($createresult->success) {
-
+if (isset($sitemembership)) {
+$uid = $user->uid; // User ID of user that you want to add role to.
+user_multiple_role_edit(array($uid), 'add_role', "paywall_member");
+backdrop_set_message("You have now gained content membership!");
 }
 
-} else {
+// Registering the new order to the database.
+        if (module_exists('basic_cart_plus_order')) {
+            basic_cart_plus_save_order($comment);
+        }
 
-$createresult = Braintree_Customer::create([
-      'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-      'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-      'phone' => $current_user->field_basic_cart_plus_phone[$current_user->langcode]['0']['value'],
-      'website' => $current_user->field_basic_cart_plus_website[$current_user->langcode]['0']['value'],
-      'creditCard' => [
-      'number' => $form_state['values']['card'],
-      'expirationMonth' => $form_state['values']['month'],
-      'expirationYear' => $form_state['values']['year'],
-      'options' => [
-                'makeDefault' => true
-            ],
-      'billingAddress' => [
-            'firstName' => $current_user->field_basic_cart_plus_firstname[$current_user->langcode]['0']['value'],
-            'lastName' => $current_user->field_basic_cart_plus_lastname[$current_user->langcode]['0']['value'],
-            'streetAddress' => $current_user->field_basic_cart_plus_address[$current_user->langcode]['0']['value'],
-            'extendedAddress' => $current_user->field_basic_cart_plus_address2[$current_user->langcode]['0']['value'],
-            'locality' => $current_user->field_basic_cart_plus_city[$current_user->langcode]['0']['value'],
-            'region' => $current_user->field_basic_cart_plus_state[$current_user->langcode]['0']['value'],
-            'postalCode' => $current_user->field_basic_cart_plus_zip[$current_user->langcode]['0']['value'],
-            'countryCodeAlpha3' => 'USA',
-            'company' => $current_user->field_basic_cart_plus_company[$current_user->langcode]['0']['value']
-        ]
-        ]
-    ]);
+        basic_cart_plus_mail_order($comment, $total_price);
 
-if ($createresult->success) {
-
-}
-
-}
-
-
-
+        basic_cart_plus_empty_cart();
+        backdrop_goto('checkout/thank-you');
 
 }
 else {
@@ -528,8 +549,7 @@ foreach($result->errors->deepAll() AS $error) {
 backdrop_set_message($error->code . ": " . $error->message . "\n");
 }
 
-
-
 }
 }
+
 }
