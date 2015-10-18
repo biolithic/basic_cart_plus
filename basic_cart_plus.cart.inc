@@ -96,10 +96,28 @@ function basic_cart_plus_cart_form_submit($form_id, $form_state)
  */
 function basic_cart_plus_add_to_cart($nid = NULL)
 {
-    $nid = (int) $nid;
+    $nid         = (int) $nid;
+    $node        = node_load($nid);
+    $member_info = basic_cart_plus_node_membership_info($node);
+    if (($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) || ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) || ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) || ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0)) {
+        basic_cart_plus_empty_cart();
+    }
+
     if ($nid > 0) {
         // If a node is added more times, just update the quantity.
         $cart = basic_cart_plus_get_cart();
+
+        foreach ($cart as $cid => $value) {
+            if (is_numeric($cid)) {
+                $node        = node_load($cart[$value]);
+                $member_info = basic_cart_plus_node_membership_info($node);
+                if ($member_info["is_member_node"] > 0 || $member_info["is_bronze_node"] > 0 || $member_info["is_silver_node"] > 0 || $member_info["is_gold_node"] > 0) {
+                    basic_cart_plus_empty_cart();
+                }
+
+            }
+        }
+
         if (!empty($cart) && in_array($nid, array_keys($cart))) {
             // Clicked 2 times on add to cart button. Increment quantity.
             $x = $_SESSION['basic_cart_plus']['cart'][$nid . 'quantity'];
@@ -182,14 +200,21 @@ function basic_cart_plus_get_total_price()
         if (is_numeric($cid)) {
             $node = node_load($cart[$value]);
 
-            global $user;
-            foreach (array_keys(node_type_get_names()) as $term) {
-                $testvariable = "paywall_member_" . $term;
-                $isenabled    = config_get('basic_cart_plus.settings', $testvariable);
-                if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
-                    $basic_cart_plus_paywall_price = config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
-                    $total_price += $basic_cart_plus_paywall_price;
-                }
+            $member_info = basic_cart_plus_node_membership_info($node);
+            if ($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) {
+                $total_price += config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
+            }
+
+            if ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) {
+                $total_price += config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_bronze_price");
+            }
+
+            if ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) {
+                $total_price += config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_silver_price");
+            }
+
+            if ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0) {
+                $total_price += config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_gold_price");
             }
 
             if (isset($_SESSION['basic_cart_plus']['cart'][$cid . 'quantity']) && isset($node->price["und"][0]["value"])) {
@@ -230,6 +255,7 @@ function basic_cart_plus_price_format($price)
     $format   = config_get('basic_cart_plus.settings', 'basic_cart_plus_price_format');
     $currency = check_plain(config_get('basic_cart_plus.settings', 'basic_cart_plus_currency'));
     $price    = (float) $price;
+
     switch ($format) {
         case 0:
             $price = number_format($price, 2, ',', ' ') . ' ' . $currency;
@@ -998,8 +1024,7 @@ function basic_cart_plus_sanitize_data($billing_values)
         $comment = filter_var($billing_values['billing']['comment'], FILTER_SANITIZE_STRING);
         // $comment = filter_var($comment, FILTER_SANITIZE_ENCODED);
         $comment = filter_var($comment, FILTER_SANITIZE_SPECIAL_CHARS);
-    }
-    else {
+    } else {
         $comment = "default";
     }
 
@@ -1034,6 +1059,10 @@ function basic_cart_plus_form_payment($form, $form_state)
 }
 
 
+
+
+
+
 function basic_cart_plus_form_callback($form, $form_state)
 {
     // Assign billing data for easier referencing.
@@ -1054,22 +1083,37 @@ function basic_cart_plus_form_callback($form, $form_state)
     // Cart elements.
     foreach ($cart as $cid => $value) {
         if (is_numeric($cid)) {
-            $node = node_load($cart[$value]);
+            $node        = node_load($cart[$value]);
+            $member_info = basic_cart_plus_node_membership_info($node);
+            if (($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) || ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) || ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) || ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0)) {
+                $order_details .= ++$i . ". " . $node->title . "\t 1 x " . $total_price . "\n";
+                $sitemembership = "yes";
+                global $user;
+                $uid = $user->uid; // User ID of user that you want to add role to.
+            }
 
-            global $user;
-            foreach (array_keys(node_type_get_names()) as $term) {
-                $testvariable = "paywall_member_" . $term;
-                $isenabled    = config_get('basic_cart_plus.settings', $testvariable);
-                if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
-                    $basic_cart_plus_paywall_price = config_get('basic_cart_plus.settings', "basic_cart_plus_paywall_price");
-                    $order_details .= ++$i . ". " . $node->title . "\t 1 x " . $unit_price . "\n";
-                    $sitemembership = "yes";
+            if ($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) {
+                user_multiple_role_edit(array(
+                    $uid
+                ), 'add_role', "paywall_member");
+            }
 
-                    $uid = $user->uid; // User ID of user that you want to add role to.
-                    user_multiple_role_edit(array(
-                        $uid
-                    ), 'add_role', "paywall_member");
-                }
+            if ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) {
+                user_multiple_role_edit(array(
+                    $uid
+                ), 'add_role', "paywall_bronze");
+            }
+
+            if ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) {
+                user_multiple_role_edit(array(
+                    $uid
+                ), 'add_role', "paywall_silver");
+            }
+
+            if ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0) {
+                user_multiple_role_edit(array(
+                    $uid
+                ), 'add_role', "paywall_gold");
             }
 
             if (!isset($sitemembership)) {
@@ -1095,7 +1139,6 @@ function basic_cart_plus_form_callback($form, $form_state)
     }
 
     basic_cart_plus_mail_order($comment, $total_price);
-
     basic_cart_plus_empty_cart();
     backdrop_goto('checkout/thank-you');
 }

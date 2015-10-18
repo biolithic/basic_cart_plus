@@ -266,14 +266,18 @@ function basic_cart_plus_admin_checkout_config()
 function basic_cart_plus_admin_content_config()
 {
 
-module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
+    module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
     $node_types = node_type_get_types();
     if (empty($node_types)) {
         return NULL;
     }
 
     $product_types = config_get('basic_cart_plus.settings', 'basic_cart_plus_content_types');
-    $options       = array();
+    if (empty($product_types)) {
+        $product_types = array();
+    }
+
+    $options = array();
     foreach ($node_types as $node_type => $type) {
         if ($node_type == 'order' && module_exists('basic_cart_plus_order')) {
             continue;
@@ -300,6 +304,14 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         '#default_value' => $default_value
     );
 
+    $form['content_type']['basic_cart_plus_cart_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Add to Cart Button Text'),
+        '#default_value' => config_get('basic_cart_plus.settings', 'basic_cart_plus_cart_title'),
+        '#description' => t('Add to Cart Button Text'),
+        '#required' => TRUE
+    );
+
     $form['content_type']['basic_cart_plus_price'] = array(
         '#type' => 'markup',
         '#title' => t('Price of product?'),
@@ -319,15 +331,27 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         $form['paywall_members']["paywall_member_$term"] = array(
             '#type' => 'checkbox',
             '#title' => t("Do you want to charge for $term ?"),
-            '#default_value' =>  config_get('basic_cart_plus.settings', "paywall_member_$term"),
+            '#default_value' => config_get('basic_cart_plus.settings', "paywall_member_$term"),
             '#description' => t("Uncheck to allow all users to view nodes of content type $term .  Check to limit access to one-time paying members.")
         );
     }
 
+    $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_membership_title');
+    if (empty($default_plan)) {
+        $default_plan = "Get site membership";
+    }
+    $form['paywall_members']['basic_cart_membership_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Membership Button Text'),
+        '#default_value' => $default_plan,
+        '#description' => t('Add to Cart Button Text'),
+        '#required' => TRUE
+    );
+
     $form['paywall_members']['basic_cart_plus_paywall_price'] = array(
         '#type' => 'textfield',
         '#title' => t('Flat price of membership'),
-        '#default_value' =>  config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_price'),
+        '#default_value' => config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_price'),
         '#description' => t('Flat price of membership if you choose to charge once for access.'),
         '#required' => TRUE
     );
@@ -351,10 +375,22 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         $form['paywall_subscription']["paywall_bronze_$term"] = array(
             '#type' => 'checkbox',
             '#title' => t("Do you want to charge the bronze level for $term ?"),
-            '#default_value' =>  config_get('basic_cart_plus.settings', "paywall_bronze_$term"),
+            '#default_value' => config_get('basic_cart_plus.settings', "paywall_bronze_$term"),
             '#description' => t("Uncheck to allow all users to view nodes of content type $term .  Check to limit access to bronze subscription paying members.")
         );
     }
+
+    $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_bronze_title');
+    if (empty($default_plan)) {
+        $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_bronze_name') . " membership";
+    }
+    $form['paywall_subscription']['basic_cart_plus_bronze_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Bronze Level Subscription Button Text'),
+        '#default_value' => $default_plan,
+        '#description' => t('Bronze Subscription Button Text'),
+        '#required' => TRUE
+    );
 
     $form['paywall_subscription']['basic_cart_plus_subscription_silver'] = array(
         '#type' => 'markup',
@@ -369,10 +405,22 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         $form['paywall_subscription']["paywall_silver_$term"] = array(
             '#type' => 'checkbox',
             '#title' => t("Do you want to charge the silver level for $term ?"),
-            '#default_value' =>  config_get('basic_cart_plus.settings', "paywall_silver_$term"),
+            '#default_value' => config_get('basic_cart_plus.settings', "paywall_silver_$term"),
             '#description' => t("Uncheck to allow all users to view nodes of content type $term .  Check to limit access to silver subscription paying members.")
         );
     }
+
+    $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_silver_title');
+    if (empty($default_plan)) {
+        $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_silver_name') . " membership";
+    }
+    $form['paywall_subscription']['basic_cart_plus_silver_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Silver Level Subscription Button Text'),
+        '#default_value' => $default_plan,
+        '#description' => t('Silver Level Subscription Button Text'),
+        '#required' => TRUE
+    );
 
     $form['paywall_subscription']['basic_cart_plus_subscription_gold'] = array(
         '#type' => 'markup',
@@ -387,10 +435,22 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         $form['paywall_subscription']["paywall_gold_$term"] = array(
             '#type' => 'checkbox',
             '#title' => t("Do you want to charge the gold level for $term ?"),
-            '#default_value' =>  config_get('basic_cart_plus.settings', "paywall_gold_$term"),
+            '#default_value' => config_get('basic_cart_plus.settings', "paywall_gold_$term"),
             '#description' => t("Uncheck to allow all users to view nodes of content type $term .  Check to limit access to gold subscription paying members.")
         );
     }
+
+    $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_gold_title');
+    if (empty($default_plan)) {
+        $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_gold_name') . " membership";
+    }
+    $form['paywall_subscription']['basic_cart_plus_gold_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Gold Level Subscription Button Text'),
+        '#default_value' => $default_plan,
+        '#description' => t('Gold Level Subscription Button Text'),
+        '#required' => TRUE
+    );
 
     $form['paywall_subscription']['basic_cart_plus_subscription_price'] = array(
         '#type' => 'markup',
@@ -404,19 +464,23 @@ module_load_include('inc', 'basic_cart_plus', 'basic_cart_plus.cart');
         '#value' => t('Save configuration')
     );
 
-return $form;
+    return $form;
 
 }
 
 
 function basic_cart_plus_admin_payment_config()
 {
-$payments = array(0 => 'none', 1 => 'stripe', 2 => 'braintree');
-    $form['basic_cart_plus_which_payment'] = array (
-    '#title' => t('Check if you want to use no payment processor, Stripe Payments, or Braintree Payments.'),
-    '#type' => 'radios',
-    '#options' => $payments,
-    '#default_value' => config_get('basic_cart_plus.settings', 'basic_cart_plus_which_payment')
+    $payments                              = array(
+        0 => 'none',
+        1 => 'stripe',
+        2 => 'braintree'
+    );
+    $form['basic_cart_plus_which_payment'] = array(
+        '#title' => t('Check if you want to use no payment processor, Stripe Payments, or Braintree Payments.'),
+        '#type' => 'radios',
+        '#options' => $payments,
+        '#default_value' => config_get('basic_cart_plus.settings', 'basic_cart_plus_which_payment')
     );
 
     $form['braintree_section'] = array(
@@ -572,13 +636,13 @@ $payments = array(0 => 'none', 1 => 'stripe', 2 => 'braintree');
         '#description' => t('Check this box to use your live key.  Uncheck to enter demo mode and use your test key')
     );
 
-$form['actions']['#type']  = 'actions';
+    $form['actions']['#type']  = 'actions';
     $form['actions']['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Save configuration')
     );
 
-return $form;
+    return $form;
 
 }
 
@@ -652,9 +716,9 @@ function basic_cart_plus_admin_settings_config_submit($form, &$form_state)
 function basic_cart_plus_admin_content_config_submit($form, &$form_state)
 {
 
-$product_types = array();
+    $product_types = array();
     $content_types = $form_state['values']['basic_cart_plus_content_types'];
-    unset($form_state['values']['basic_cart_plus_content_types']);
+    // unset($form_state['values']['basic_cart_plus_content_types']);
 
     if (!empty($content_types) && is_array($content_types)) {
         $field = field_info_field('price');
@@ -691,20 +755,20 @@ $product_types = array();
         }
     }
 
-foreach ($form_state['values'] as $key => $value) {
+    foreach ($form_state['values'] as $key => $value) {
         if (is_array($value) && isset($form_state['values']['array_filter'])) {
             $value = array_keys(array_filter($value));
         }
         config_set('basic_cart_plus.settings', $key, $value);
     }
 
-backdrop_set_message(t('The configuration options have been saved.'));
+    backdrop_set_message(t('The configuration options have been saved.'));
 
 }
 
 function basic_cart_plus_admin_payment_config_submit($form, &$form_state)
 {
-foreach ($form_state['values'] as $key => $value) {
+    foreach ($form_state['values'] as $key => $value) {
         if (is_array($value) && isset($form_state['values']['array_filter'])) {
             $value = array_keys(array_filter($value));
         }

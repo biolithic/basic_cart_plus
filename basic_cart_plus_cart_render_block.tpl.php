@@ -15,14 +15,11 @@ foreach ($cart as $cid => $value) {
 if (is_numeric($cid))
 {
 $node = node_load($cart[$value]);
+$member_info = basic_cart_plus_node_membership_info($node);
 print '<div class="basic-cart-cart-contents row">';
 
-
-global $user;
-foreach (array_keys(node_type_get_names()) as $term) {
-$testvariable = "paywall_member_" . $term;
-$isenabled = config_get('basic_cart_plus.settings', $testvariable);
-if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
+if (($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) || ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) || ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) || ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0) )
+{
 $sitemembership = "yes";
 print '<div class="basic-cart-cart-node-title cell">' . l("Site Membership", 'node/' . $node->nid) . '</div>';print '<div class="basic-cart-cart-quantity cell">' . $_SESSION['basic_cart_plus']['cart'][$cid. 'quantity'] . '</div>';
 print '<div class="basic-cart-cart-x cell">x</div>';

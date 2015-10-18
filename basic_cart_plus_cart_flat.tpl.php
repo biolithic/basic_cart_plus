@@ -5,57 +5,75 @@
  */
 ?>
 
-<?php if (empty($cart)): ?>
-  <p><?php print t('Your cart is empty.'); ?></p>
-<?php else: ?>
-  <div class="basic-cart-grid basic-cart-block">
-<?php if(is_array($cart) && count($cart) >= 1): ?>
-      <?php
-foreach ($cart as $cid => $value) {
-if (is_numeric($cid))
-{
-$node = node_load($cart[$value]);
-      print '<div class="basic-cart-cart-contents row">';
-
-      global $user;
-      foreach (array_keys(node_type_get_names()) as $term) {
-      $testvariable = "paywall_member_" . $term;
-      $isenabled = config_get('basic_cart_plus.settings', $testvariable);
-      if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
-      $sitemembership = "yes";
-      print '<div class="basic-cart-cart-node-title cell">' . l("Site Membership", 'node/' . $node->nid) . '</div>';
-      print '<div class="basic-cart-cart-quantity cell">' . $_SESSION['basic_cart_plus']['cart'][$cid. 'quantity'] . '</div>';
-      print '<div class="basic-cart-cart-x cell">x</div>';
-      print '<div class="basic-cart-cart-unit-price cell">';
-      }
-      }
-
-      if (!isset($sitemembership))
-      {
-      print '<div class="basic-cart-cart-node-title cell">' . l($node->title, 'node/' . $node->nid) . '</div>';
-      print '<div class="basic-cart-cart-quantity cell">' . $_SESSION['basic_cart_plus']['cart'][$cid. 'quantity'] . '</div>';
-      print '<div class="basic-cart-cart-x cell">x</div>';
-      print '<div class="basic-cart-cart-unit-price cell">';
-      print '<strong>' . basic_cart_plus_price_format($node->price["und"][0]["value"]) . '</strong>';
-      }
-
-      print '</div>';
-      print '</div>';
-}
-}
+<?php
+if (empty($cart)):
 ?>
-   <div class="basic-cart-cart basic-cart-grid">
+ <p><?php
+    print t('Your cart is empty.');
+?></p>
+<?php
+else:
+?>
+ <div class="basic-cart-grid basic-cart-block">
+<?php
+    if (is_array($cart) && count($cart) >= 1):
+?>
+     <?php
+        foreach ($cart as $cid => $value) {
+            if (is_numeric($cid)) {
+                $node        = node_load($cart[$value]);
+                $member_info = basic_cart_plus_node_membership_info($node);
+                print '<div class="basic-cart-cart-contents row">';
+
+                if (($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) || ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) || ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) || ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0)) {
+                    $sitemembership = "yes";
+                    print '<div class="basic-cart-cart-node-title cell">' . l("Site Membership", 'node/' . $node->nid) . '</div>';
+                    print '<div class="basic-cart-cart-quantity cell">' . $_SESSION['basic_cart_plus']['cart'][$cid . 'quantity'] . '</div>';
+                    print '<div class="basic-cart-cart-x cell">x</div>';
+                    print '<div class="basic-cart-cart-unit-price cell">';
+                }
+
+                if (!isset($sitemembership)) {
+                    print '<div class="basic-cart-cart-node-title cell">' . l($node->title, 'node/' . $node->nid) . '</div>';
+                    print '<div class="basic-cart-cart-quantity cell">' . $_SESSION['basic_cart_plus']['cart'][$cid . 'quantity'] . '</div>';
+                    print '<div class="basic-cart-cart-x cell">x</div>';
+                    print '<div class="basic-cart-cart-unit-price cell">';
+                    print '<strong>' . basic_cart_plus_price_format($node->price["und"][0]["value"]) . '</strong>';
+                }
+
+                print '</div>';
+                print '</div>';
+            }
+        }
+?>
+  <div class="basic-cart-cart basic-cart-grid">
       <div class="basic-cart-cart-total-price-contents row">
         <div class="basic-cart-total-price cell">
-          <?php print t('Total price'); ?>: <strong> <?php print $price; ?></strong>
+          <?php
+        print t('Total price');
+?>: <strong> <?php
+        print $price;
+?></strong>
         </div>
       </div>
 
-      <?php if (!empty ($vat)): ?>
-        <div class="basic-cart-cart-total-vat-contents row">
-          <div class="basic-cart-total-vat cell"><?php print t('Total VAT'); ?>: <strong><?php print $vat; ?></strong></div>
+      <?php
+        if (!empty($vat)):
+?>
+       <div class="basic-cart-cart-total-vat-contents row">
+          <div class="basic-cart-total-vat cell"><?php
+            print t('Total VAT');
+?>: <strong><?php
+            print $vat;
+?></strong></div>
         </div>
-      <?php endif; ?>
-    <?php endif; ?>
-  </div>
-<?php endif; ?>
+      <?php
+        endif;
+?>
+   <?php
+    endif;
+?>
+ </div>
+<?php
+endif;
+?>

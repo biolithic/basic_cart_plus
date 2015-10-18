@@ -18,11 +18,11 @@ function basic_cart_plus_config_info()
 require_once backdrop_get_path('module', 'basic_cart_plus') . '/basic_cart_plus.theme.inc';
 $which_payment = config_get('basic_cart_plus.settings', 'basic_cart_plus_which_payment');
 if ($which_payment == 1) {
-module_load_include('inc', 'basic_cart_plus_stripe', 'basic_cart_plus_stripe.cart');
+    module_load_include('inc', 'basic_cart_plus_stripe', 'basic_cart_plus_stripe.cart');
 }
 
 if ($which_payment == 2) {
-module_load_include('inc', 'basic_cart_plus_braintree', 'basic_cart_plus_braintree.cart');
+    module_load_include('inc', 'basic_cart_plus_braintree', 'basic_cart_plus_braintree.cart');
 }
 
 /**
@@ -105,7 +105,7 @@ function basic_cart_plus_menu()
         'file' => 'basic_cart_plus.admin.inc',
         'weight' => 5
     );
-        $items['admin/config/basic_cart_plus/settings/content'] = array(
+    $items['admin/config/basic_cart_plus/settings/content']  = array(
         'title' => 'Content',
         'description' => 'Basic Cart Plus content settings.',
         'page callback' => 'backdrop_get_form',
@@ -119,7 +119,7 @@ function basic_cart_plus_menu()
         'file' => 'basic_cart_plus.admin.inc',
         'weight' => 9
     );
-    $items['admin/config/basic_cart_plus/settings/payment'] = array(
+    $items['admin/config/basic_cart_plus/settings/payment']  = array(
         'title' => 'Payment',
         'description' => 'Basic Cart Plus payment settings.',
         'page callback' => 'backdrop_get_form',
@@ -199,63 +199,152 @@ function basic_cart_plus_menu()
     );
     return $items;
 }
+
+/**
+ * Pass in a node object and it will give back an array of access information
+ */
+function basic_cart_plus_node_membership_info($node)
+{
+
+    global $user;
+    $current_user = user_load($user->uid);
+    $userroles    = array();
+    if (isset($current_user->roles)) {
+        $userroles = $current_user->roles;
+    }
+
+    $product_types = config_get('basic_cart_plus.settings', 'basic_cart_plus_content_types');
+    if (!is_array($product_types) || empty($product_types)) {
+        $is_product_node = 0;
+    } else {
+        if (!empty($product_types[$node->type]) && in_array($node->type, $product_types)) {
+            $is_product_node = 1;
+        } else {
+            $is_product_node = 0;
+        }
+    }
+
+    foreach (array_keys(node_type_get_names()) as $content_type) {
+
+        if ($node->type == $content_type) {
+            $test_member = "paywall_member_" . $content_type;
+            $test_bronze = "paywall_bronze_" . $content_type;
+            $test_silver = "paywall_silver_" . $content_type;
+            $test_gold   = "paywall_gold_" . $content_type;
+
+            $is_member_node = config_get('basic_cart_plus.settings', $test_member);
+            $is_bronze_node = config_get('basic_cart_plus.settings', $test_bronze);
+            $is_silver_node = config_get('basic_cart_plus.settings', $test_silver);
+            $is_gold_node   = config_get('basic_cart_plus.settings', $test_gold);
+        }
+    }
+
+    if (!in_array("paywall_member", $userroles)) {
+        $is_member_user = 0;
+    } else {
+        $is_member_user = 1;
+    }
+
+    if (!in_array("paywall_bronze", $userroles)) {
+        $is_bronze_user = 0;
+    } else {
+        $is_bronze_user = 1;
+    }
+
+    if (!in_array("paywall_silver", $userroles)) {
+        $is_silver_user = 0;
+    } else {
+        $is_silver_user = 1;
+    }
+
+    if (!in_array("paywall_gold", $userroles)) {
+        $is_gold_user = 0;
+    } else {
+        $is_gold_user = 1;
+    }
+
+    $arr = array(
+        'is_product_node' => $is_product_node,
+        'is_member_node' => $is_member_node,
+        'is_bronze_node' => $is_bronze_node,
+        'is_silver_node' => $is_silver_node,
+        'is_gold_node' => $is_gold_node,
+        'is_member_user' => $is_member_user,
+        'is_bronze_user' => $is_bronze_user,
+        'is_silver_user' => $is_silver_user,
+        'is_gold_user' => $is_gold_user
+    );
+    return $arr;
+}
+
 /**
  * Implements hook_node_view().
  */
 function basic_cart_plus_node_view($node, $view_mode, $langcode)
 {
+    $member_info = basic_cart_plus_node_membership_info($node);
+    dsm($member_info);
+    $button_title = "";
+    global $base_url;
+
     // Check if the current user has access to basic cart.
-    if (user_access('use basic cart')) {
-        // Getting node types.
-        $node_types = config_get('basic_cart_plus.settings', 'basic_cart_plus_content_types');
-        if (!is_array($node_types) || empty($node_types)) {
-            return;
-        }
-        // Add to cart button.
-        if (!empty($node_types[$node->type]) && in_array($node->type, $node_types)) {
+    if (user_access('use basic cart') && $view_mode != 'rss') {
+        if ($member_info["is_product_node"] > 0) {
             // Price field.
-            $price                                        = field_get_items('node', $node, 'price');
-            $price                                        = check_plain($price[0]['value']);
+            $price                  = field_get_items('node', $node, 'price');
+            $price                  = check_plain($price[0]['value']);
             // Price format.
-            $price                                        = basic_cart_plus_price_format($price);
-            $node->content['price']                       = array(
+            $price                  = basic_cart_plus_price_format($price);
+            $node->content['price'] = array(
                 '#markup' => theme('basic_cart_plus_price', array(
                     'price' => $price
                 )),
                 '#weight' => 30
             );
+
+            $add_to_cart_title = config_get('basic_cart_plus.settings', 'basic_cart_plus_cart_title');
+            if (empty($add_to_cart_title)) {
+                $add_to_cart_title = "Add to Cart";
+            }
+
             $node->content['basic_cart_plus_add_to_cart'] = array(
                 '#markup' => theme('basic_cart_plus_add_to_cart', array(
-                    'nid' => $node->nid
+                    'nid' => $node->nid,
+                    'add_to_cart_title' => $add_to_cart_title
                 )),
                 '#weight' => 50
             );
         }
 
-if ($view_mode != 'rss') {
-        global $user;
-        foreach (array_keys(node_type_get_names()) as $term) {
-          $testvariable = "paywall_member_" . $term;
-          $isenabled = config_get('basic_cart_plus.settings', $testvariable);
-            if ($node->type == $term && (arg(1) != $node->uid) && ($isenabled > 0) && !in_array("paywall_member", $user->roles)) {
-                $testvariable = config_get('basic_cart_plus.settings', "paywall_member_" . $term);
-                global $base_url;
-//                $thehtml               = "<a href='" . $base_url . "/checkout' id='buynowbutton' name='buynowbutton' class-'buynowbutton button btn'>Get exclusive access now!</a>";
-$thehtml = "<a href='" . $base_url . "/cart/add/" . $node->nid . "' id='buynowbutton' name='buynowbutton' class='buynowbutton button btn basic-cart-add-to-cart-link'>Get exclusive access now!</a>";
-                unset($node->content["links"]);
+        if ($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) {
+            $button_title = config_get('basic_cart_plus.settings', "basic_cart_membership_title");
+        }
 
-                $node->content['node'] = array(
-                    '#markup' => $thehtml,
-                    '#weight' => 100
-                );
-            }
+        if ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) {
+            $button_title = config_get('basic_cart_plus.settings', "basic_cart_plus_bronze_title");
+        }
+
+        if ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) {
+            $button_title = config_get('basic_cart_plus.settings', "basic_cart_plus_silver_title");
+        }
+
+        if ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0) {
+            $button_title = config_get('basic_cart_plus.settings', "basic_cart_plus_gold_title");
+        }
+
+        if (!empty($button_title)) {
+            unset($node->content["links"]);
+            $node->content['node'] = array(
+                '#markup' => theme('basic_cart_plus_add_to_cart', array(
+                    'nid' => $node->nid,
+                    'add_to_cart_title' => $button_title
+                )),
+                '#weight' => 50
+            );
         }
     }
 
-
-    }
 }
-
 
 
 /**
@@ -263,16 +352,11 @@ $thehtml = "<a href='" . $base_url . "/cart/add/" . $node->nid . "' id='buynowbu
  */
 function basic_cart_plus_node_view_alter(&$build)
 {
-    $contenttype  = $build['#bundle'];
-    $contenttype  = "paywall_member_" . $contenttype;
-    $testvariable = config_get('basic_cart_plus.settings', $contenttype);
-    if ($testvariable > 0) {
-        $node = $build['#node'];
-        global $user;
-        if ($build['#view_mode'] != 'teaser' && !in_array("paywall_member", $user->roles)) {
-            basic_cart_plus_alter_node($build);
-        }
+    $member_info = basic_cart_plus_node_membership_info($build['#node']);
+    if (($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) || ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) || ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) || ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0)) {
+        basic_cart_plus_alter_node($build);
     }
+
 }
 
 function basic_cart_plus_alter_node(&$build)
@@ -336,7 +420,8 @@ function basic_cart_plus_theme()
         'basic_cart_plus_add_to_cart' => array(
             'function' => 'basic_cart_plus_add_to_cart_button',
             'variables' => array(
-                'nid' => NULL
+                'nid' => NULL,
+                'add_to_cart_title' => NULL
             )
         ),
         'basic_cart_plus_cart_flat' => array(
@@ -403,7 +488,7 @@ function basic_cart_plus_block_view($delta = '')
 /**
  * Helper function. Returns true if given node (node object or string node type) is a product.
  */
-function basic_cart_braintree_is_product($node)
+function basic_cart_plus_is_product($node)
 {
     $type       = is_object($node) ? $node->type : $node;
     // Getting node types.
@@ -432,18 +517,20 @@ function basic_cart_plus_views_api()
 }
 
 
-function basic_cart_plus_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
-  global $user;
-  $current_user = user_load($user->uid);
-  if($current_user->uid != 1) {
-    $form['field_basic_cart_plus_s_id']['#access'] = FALSE;
-  }
+function basic_cart_plus_form_user_profile_form_alter(&$form, &$form_state, $form_id)
+{
+    global $user;
+    $current_user = user_load($user->uid);
+    if ($current_user->uid != 1) {
+        $form['field_basic_cart_plus_s_id']['#access'] = FALSE;
+    }
 }
 
-function basic_cart_plus_preprocess_user_profile(&$vars) {
-  global $user;
-  $current_user = user_load($user->uid);
-  if($current_user->uid != 1) {
-    unset($vars['user_profile']['field_basic_cart_plus_s_id']);
-  }
+function basic_cart_plus_preprocess_user_profile(&$vars)
+{
+    global $user;
+    $current_user = user_load($user->uid);
+    if ($current_user->uid != 1) {
+        unset($vars['user_profile']['field_basic_cart_plus_s_id']);
+    }
 }
