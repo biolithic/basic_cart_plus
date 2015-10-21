@@ -1,4 +1,3 @@
-
 <?php
 /**
  * @file
@@ -178,8 +177,8 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
         $basic_cart_plus_stripe_secret_key = $one;
     }
 
-    empty($basic_cart_plus_stripe_secret_key) ? NULL : StripeStripe::setApiKey($basic_cart_plus_stripe_secret_key);
-    StripeStripe::setApiVersion(config_get('basic_cart_plus.settings', 'basic_cart_plus_stripe_setApiVersion'));
+    empty($basic_cart_plus_stripe_secret_key) ? NULL : \Stripe\Stripe::setApiKey($basic_cart_plus_stripe_secret_key);
+    \Stripe\Stripe::setApiVersion(config_get('basic_cart_plus.settings', 'basic_cart_plus_stripe_setApiVersion'));
 
     // Assign billing data for easier referencing.
 
@@ -210,7 +209,7 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
                 $sitemembership = "yes";
             }
 
-            // can only put one type of membership in the cart
+            // can only put one type of membership in the cart from cart design elsewhere
 
             if ($member_info["is_member_node"] > 0 && $member_info["is_member_user"] == 0) {
                 $considered_role = "paywall_member";
@@ -218,14 +217,20 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
 
             if ($member_info["is_bronze_node"] > 0 && $member_info["is_bronze_user"] == 0) {
                 $considered_role = "paywall_bronze";
+                $considered_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_bronze_id');
+                $considered_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_bronze_name');
             }
 
             if ($member_info["is_silver_node"] > 0 && $member_info["is_silver_user"] == 0) {
                 $considered_role = "paywall_silver";
+                $considered_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_silver_id');
+                $considered_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_silver_name');
             }
 
             if ($member_info["is_gold_node"] > 0 && $member_info["is_gold_user"] == 0) {
                 $considered_role = "paywall_gold";
+                $considered_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_gold_id');
+                $considered_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_gold_name');
             }
 
             if (!isset($sitemembership)) {
@@ -253,7 +258,7 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
         $current_user = user_load($user->uid);
         if (isset($current_user->field_basic_cart_plus_s_id[$current_user->langcode])) {
             $stripeid = $current_user->field_basic_cart_plus_s_id[$current_user->langcode][0]['value'];
-            $stripecustomer = StripeCustomer::retrieve($stripeid);
+            $stripecustomer = \Stripe\Customer::retrieve($stripeid);
             $stripecustomerid = $stripecustomer->id;
         }
         else {
@@ -261,7 +266,7 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
         }
 
         if (empty($stripecustomerid)) {
-            $stripecustomer = StripeCustomer::create(array(
+            $stripecustomer = \Stripe\Customer::create(array(
                 "source" => $token,
                 "description" => $billing_values['billing']['email'],
                 "email" => $billing_values['billing']['email']
@@ -271,24 +276,147 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
             ));
             $current_user->field_basic_cart_plus_s_id[$current_user->langcode][0]['value'] = $stripecustomer->id;
             $current_user->save();
-            $stripecustomer = StripeCustomer::retrieve($stripecustomer->id);
+            $stripecustomer = \Stripe\Customer::retrieve($stripecustomer->id);
         }
         else {
         }
 
-        // Charge the customer.
+// if customer is buying a subscription
+if (isset($considered_plan)) {
 
-        $charge = StripeCharge::create(array(
+if ($considered_role == "paywall_bronze") {
+/*if (isset($current_user->field_basic_cart_plus_bronze_id[$current_user->langcode])) {
+$bronze_id = $current_user->field_basic_cart_plus_bronze_id[$current_user->langcode][0]['value'];
+}
+else {
+$bronze_id = "123";
+}*/
+
+try {
+// $subscription = $stripecustomer->subscriptions->retrieve($bronze_id);
+// if (isset($subscription)) {
+//    backdrop_set_message('Error: Subscription exists.');
+// } else {
+$new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
+$current_user->field_basic_cart_plus_bronze_id[$current_user->langcode][0]['value'] = $new_subscription->id;
+user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
+backdrop_set_message("You have now gained " . $considered_name . " membership!");
+$current_user->save();
+// }
+
+}
+    catch (\Stripe\Error\ApiConnection $e) {
+    // Network problem
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\InvalidRequest $e) {
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\Api $e) {
+    // Stripe's servers are down
+   $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+}
+
+
+}
+
+if ($considered_role == "paywall_silver") {
+/*if (isset($current_user->field_basic_cart_plus_silver_id[$current_user->langcode])) {
+$silver_id = $current_user->field_basic_cart_plus_silver_id[$current_user->langcode][0]['value'];
+}
+else {
+$silver_id = "";
+}*/
+
+try {
+// $subscription = $stripecustomer->subscriptions->retrieve($silver_id);
+// if (isset($subscription)) {
+//    backdrop_set_message('Error: Subscription exists.');
+// } else {
+$new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
+$current_user->field_basic_cart_plus_silver_id[$current_user->langcode][0]['value'] = $new_subscription->id;
+user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
+backdrop_set_message("You have now gained " . $considered_name . " membership!");
+$current_user->save();
+// }
+
+}
+    catch (\Stripe\Error\ApiConnection $e) {
+    // Network problem
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\InvalidRequest $e) {
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\Api $e) {
+    // Stripe's servers are down
+   $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+}
+
+}
+
+if ($considered_role == "paywall_gold") {
+
+/*if (isset($current_user->field_basic_cart_plus_gold_id[$current_user->langcode])) {
+$gold_id = $current_user->field_basic_cart_plus_gold_id[$current_user->langcode][0]['value'];
+}
+else {
+$gold_id = "";
+}*/
+
+try {
+// $subscription = $stripecustomer->subscriptions->retrieve($gold_id);
+// if (isset($subscription)) {
+//    backdrop_set_message('Error: Subscription exists.');
+// } else {
+$new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
+$current_user->field_basic_cart_plus_gold_id[$current_user->langcode][0]['value'] = $new_subscription->id;
+user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
+backdrop_set_message("You have now gained " . $considered_name . " membership!");
+$current_user->save();
+// }
+
+}
+
+    catch (\Stripe\Error\ApiConnection $e) {
+    // Network problem
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\InvalidRequest $e) {
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+} catch (\Stripe\Error\Api $e) {
+    // Stripe's servers are down
+   $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Subscription did not complete." . $err, "error");
+}
+
+}
+
+// not buying a subscription
+} else {
+// Charge the customer.
+        $charge = \Stripe\Charge::create(array(
             "amount" => $total_price,
             "currency" => config_get('basic_cart_plus.settings', 'basic_cart_plus_currency') ,
             "customer" => $stripecustomer->id
         ));
         backdrop_set_message("Transaction success!");
-        if (isset($sitemembership)) {
-            $uid = $user->uid; // User ID of user that you want to add role to.
-            user_multiple_role_edit(array(
-                $uid
-            ) , 'add_role', $considered_role);
+}
+
+        if ($considered_role == "paywall_member") {
+            user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
             backdrop_set_message("You have now gained content membership!");
         }
 
@@ -324,27 +452,20 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
         backdrop_goto('checkout/thank-you');
     }
 
-    catch(StripeErrorApiConnection $e) {
+    catch (\Stripe\Error\ApiConnection $e) {
+    // Network problem
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Checkout not complete." . $err, "error");
+} catch (\Stripe\Error\InvalidRequest $e) {
+    $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Checkout not complete." . $err, "error");
+} catch (\Stripe\Error\Api $e) {
+    // Stripe's servers are down
+   $jbody = $e->getJsonBody();
+    $err   = $jbody['error']['message'];
+    backdrop_set_message("Checkout not complete." . $err, "error");
+}
 
-        // Network problem
-
-        $jbody = $e->getJsonBody();
-        $err = $jbody['error']['message'];
-        backdrop_set_message("Checkout did not go through: " . $err, "error");
-    }
-
-    catch(StripeErrorInvalidRequest $e) {
-        $jbody = $e->getJsonBody();
-        $err = $jbody['error']['message'];
-        backdrop_set_message("Checkout did not go through: " . $err, "error");
-    }
-
-    catch(StripeErrorApi $e) {
-
-        // Stripe's servers are down
-
-        $jbody = $e->getJsonBody();
-        $err = $jbody['error']['message'];
-        backdrop_set_message("Checkout did not go through: " . $err, "error");
-    }
 }

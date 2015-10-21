@@ -1173,7 +1173,7 @@ function basic_cart_plus_save_order($comment)
 
 function basic_cart_plus_mail_order($comment, $total_price)
 {
-    // Pleaceholder replacement.
+    // Placeholder replacement.
     $search = array(
         '%CUSTOMER_NAME',
         '%CUSTOMER_EMAIL',

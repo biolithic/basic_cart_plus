@@ -380,6 +380,7 @@ function basic_cart_plus_admin_content_config()
         );
     }
 
+    $bronze_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_bronze_name');
     $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_bronze_title');
     if (empty($default_plan)) {
         $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_bronze_name') . " membership";
@@ -388,7 +389,7 @@ function basic_cart_plus_admin_content_config()
         '#type' => 'textfield',
         '#title' => t('Bronze Level Subscription Button Text'),
         '#default_value' => $default_plan,
-        '#description' => t('Bronze Subscription Button Text'),
+        '#description' => t('Hint: your bronze level membership is named ' . $bronze_name),
         '#required' => TRUE
     );
 
@@ -410,6 +411,7 @@ function basic_cart_plus_admin_content_config()
         );
     }
 
+    $silver_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_silver_name');
     $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_silver_title');
     if (empty($default_plan)) {
         $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_silver_name') . " membership";
@@ -418,7 +420,7 @@ function basic_cart_plus_admin_content_config()
         '#type' => 'textfield',
         '#title' => t('Silver Level Subscription Button Text'),
         '#default_value' => $default_plan,
-        '#description' => t('Silver Level Subscription Button Text'),
+        '#description' => t('Hint: your silver level membership is named ' . $silver_name),
         '#required' => TRUE
     );
 
@@ -440,6 +442,7 @@ function basic_cart_plus_admin_content_config()
         );
     }
 
+    $gold_name = config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_gold_name');
     $default_plan = config_get('basic_cart_plus.settings', 'basic_cart_plus_gold_title');
     if (empty($default_plan)) {
         $default_plan = "Get " . config_get('basic_cart_plus.settings', 'basic_cart_plus_paywall_gold_name') . " membership";
@@ -448,7 +451,7 @@ function basic_cart_plus_admin_content_config()
         '#type' => 'textfield',
         '#title' => t('Gold Level Subscription Button Text'),
         '#default_value' => $default_plan,
-        '#description' => t('Gold Level Subscription Button Text'),
+        '#description' => t('Hint: your gold level membership is named ' . $gold_name),
         '#required' => TRUE
     );
 
@@ -647,7 +650,7 @@ function basic_cart_plus_admin_payment_config()
 }
 
 
-// SUBMIT FUNCTIONS BELOW HERE
+// ADMIN FORM SUBMIT FUNCTIONS BELOW
 
 function basic_cart_plus_admin_settings_config_validate($form, &$form_state)
 {
@@ -718,7 +721,6 @@ function basic_cart_plus_admin_content_config_submit($form, &$form_state)
 
     $product_types = array();
     $content_types = $form_state['values']['basic_cart_plus_content_types'];
-    // unset($form_state['values']['basic_cart_plus_content_types']);
 
     if (!empty($content_types) && is_array($content_types)) {
         $field = field_info_field('price');

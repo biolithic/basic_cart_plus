@@ -424,20 +424,108 @@ We will contact you as soon as possible.', array(
         );
         field_create_instance($instance);
     }
+
+// here
+ // 15 -- bronze
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_bronze_id')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_bronze_id',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_bronze_id',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Bronze ID',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '15'
+            )
+        );
+        field_create_instance($instance);
+    }
+
+ // 16 -- silver
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_silver_id')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_silver_id',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_silver_id',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Silver ID',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '15'
+            )
+        );
+        field_create_instance($instance);
+    }
+
+// 17 -- gold
+    // Check if our field is not already created.
+    if (!field_info_field('field_basic_cart_plus_gold_id')) {
+        $field = array(
+            'field_name' => 'field_basic_cart_plus_gold_id',
+            'type' => 'text'
+        );
+        field_create_field($field);
+        // Create the instance on the bundle.
+        $instance = array(
+            'field_name' => 'field_basic_cart_plus_gold_id',
+            'entity_type' => 'user',
+            'label' => 'Basic Cart Gold ID',
+            'bundle' => 'user',
+            // If you don't set the "required" property then the field wont be required by default.
+            'required' => FALSE,
+            'settings' => array(
+                // Here you inform either or not you want this field showing up on the registration form.
+                'user_register_form' => 0
+            ),
+            'widget' => array(
+                'type' => 'textfield',
+                'weight' => '15'
+            )
+        );
+        field_create_instance($instance);
+    }
+
+
 }
+
 
 // Your custom handler
 function my_error_handler($errno, $errstr, $errfile, $errline
-    , array $errcontext) 
+    , array $errcontext)
 {
     // error was suppressed with the @-operator, ignore
     if (0 === error_reporting()) {
         return false;
     }
-     
+
     // print the backtrace
     echo '<pre>'.print_r(debug_backtrace(),true).'</pre>';
- 
+
     // throw an error exception if you want to catch it at the caller
     throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
 }
@@ -450,7 +538,7 @@ function my_error_handler($errno, $errstr, $errfile, $errline
 function basic_cart_plus_uninstall()
 {
     // set_error_handler('my_error_handler');
-    
+
 //    try {
 //    // Delete the price field from the content types associated.
 //    $types = config_get('basic_cart_plus.settings', 'basic_cart_plus_content_types');
@@ -467,18 +555,17 @@ function basic_cart_plus_uninstall()
 //            }
 //        }
 //    }
-//    
+//
 //    } catch (ErrorException $e) {
-//    dsm($e);
 //}
     // $users = entity_load('user');
     // $arrayuids = array();
     // foreach ($users as $user)
     // {
     // }
-    
+
     // restore_error_handler();
-    
+
     $fieldname = "field_basic_cart_plus_firstname";
     if ($field = field_info_instance('user', $fieldname, 'user')) {
         field_delete_instance($field);
@@ -577,6 +664,31 @@ function basic_cart_plus_uninstall()
     if ($field = field_info_field($fieldname)) {
         field_delete_field($field);
     }
+
+    $fieldname = "field_basic_cart_plus_bronze_id";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+
+    $fieldname = "field_basic_cart_plus_silver_id";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+
+    $fieldname = "field_basic_cart_plus_gold_id";
+    if ($field = field_info_instance('user', $fieldname, 'user')) {
+        field_delete_instance($field);
+    }
+    if ($field = field_info_field($fieldname)) {
+        field_delete_field($field);
+    }
+
     // Purge all field infromation
     // http://api.drupal.org/api/function/field_purge_batch/7
     field_purge_batch(1000);
