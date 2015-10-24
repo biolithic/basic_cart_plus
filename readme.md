@@ -1,8 +1,8 @@
 BASIC CART PLUS
 ------------------------
 
-This Backdrop CMS module is not working and not secure yet.  Please do not use for handling credit cards.
-I am making an attempt to finish this in 9/15.  Thank you!
+This Backdrop CMS module is working in MVP mode but not secure yet.  Please do not use for handling credit cards.
+I am making an attempt to finish this in 2015.  Thank you!
 
 CONTENTS OF THIS FILE
 ---------------------
