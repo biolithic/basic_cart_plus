@@ -32,16 +32,20 @@ function basic_cart_plus_permission()
 {
     return array(
         'administer basic cart' => array(
-            'title' => t('Administer basic cart'),
-            'description' => t('Perform administration tasks for basic cart.')
+            'title' => t('Administer Basic Cart Plus'),
+            'description' => t('Perform administration tasks for Basic Cart Plus.')
         ),
         'view basic cart orders' => array(
-            'title' => t('View basic cart orders'),
-            'description' => t('View basic cart orders.')
+            'title' => t('View Basic Cart Plus orders'),
+            'description' => t('View Basic Cart Plus orders.')
+        ),
+        'view basic cart payments' => array(
+            'title' => t('View Basic Cart Plus payments'),
+            'description' => t('View Basic Cart Plus payments.')
         ),
         'use basic cart' => array(
             'title' => t('Use Basic Cart Plus'),
-            'description' => t('Use basic cart (add to cart, remove from cart, checkout).')
+            'description' => t('Use Basic Cart Plus (add to cart, remove from cart, checkout).')
         )
     );
 }
@@ -127,7 +131,7 @@ function basic_cart_plus_menu()
             'basic_cart_plus_admin_payment_config'
         ),
         'access arguments' => array(
-            'administer Basic Cart Plus'
+            'view basic cart payments'
         ),
         'type' => MENU_LOCAL_TASK,
         'file' => 'basic_cart_plus.admin.inc',

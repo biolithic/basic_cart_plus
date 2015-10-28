@@ -285,24 +285,26 @@ function basic_cart_plus_stripe_form_callback($form, $form_state)
 if (isset($considered_plan)) {
 
 if ($considered_role == "paywall_bronze") {
-/*if (isset($current_user->field_basic_cart_plus_bronze_id[$current_user->langcode])) {
+// do checking for membership role here -- probably not needed?
+if (isset($current_user->field_basic_cart_plus_bronze_id[$current_user->langcode])) {
 $bronze_id = $current_user->field_basic_cart_plus_bronze_id[$current_user->langcode][0]['value'];
 }
 else {
 $bronze_id = "123";
-}*/
+}
 
 try {
-// $subscription = $stripecustomer->subscriptions->retrieve($bronze_id);
-// if (isset($subscription)) {
-//    backdrop_set_message('Error: Subscription exists.');
-// } else {
+// do checking for membership role here -- probably not needed?
+$subscription = $stripecustomer->subscriptions->retrieve($bronze_id);
+if (isset($subscription)) {
+   backdrop_set_message('Error: Subscription exists.');
+} else {
 $new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
 $current_user->field_basic_cart_plus_bronze_id[$current_user->langcode][0]['value'] = $new_subscription->id;
 user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
 backdrop_set_message("You have now gained " . $considered_name . " membership!");
 $current_user->save();
-// }
+}
 
 }
     catch (\Stripe\Error\ApiConnection $e) {
@@ -325,24 +327,26 @@ $current_user->save();
 }
 
 if ($considered_role == "paywall_silver") {
-/*if (isset($current_user->field_basic_cart_plus_silver_id[$current_user->langcode])) {
+// do checking for membership role here -- probably not needed?
+if (isset($current_user->field_basic_cart_plus_silver_id[$current_user->langcode])) {
 $silver_id = $current_user->field_basic_cart_plus_silver_id[$current_user->langcode][0]['value'];
 }
 else {
 $silver_id = "";
-}*/
+}
 
 try {
-// $subscription = $stripecustomer->subscriptions->retrieve($silver_id);
-// if (isset($subscription)) {
-//    backdrop_set_message('Error: Subscription exists.');
-// } else {
+// do checking for membership role here -- probably not needed?
+$subscription = $stripecustomer->subscriptions->retrieve($silver_id);
+if (isset($subscription)) {
+   backdrop_set_message('Error: Subscription exists.');
+} else {
 $new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
 $current_user->field_basic_cart_plus_silver_id[$current_user->langcode][0]['value'] = $new_subscription->id;
 user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
 backdrop_set_message("You have now gained " . $considered_name . " membership!");
 $current_user->save();
-// }
+}
 
 }
     catch (\Stripe\Error\ApiConnection $e) {
@@ -364,25 +368,25 @@ $current_user->save();
 }
 
 if ($considered_role == "paywall_gold") {
-
-/*if (isset($current_user->field_basic_cart_plus_gold_id[$current_user->langcode])) {
+// do checking for membership role here -- probably not needed?
+if (isset($current_user->field_basic_cart_plus_gold_id[$current_user->langcode])) {
 $gold_id = $current_user->field_basic_cart_plus_gold_id[$current_user->langcode][0]['value'];
 }
 else {
 $gold_id = "";
-}*/
+}
 
 try {
-// $subscription = $stripecustomer->subscriptions->retrieve($gold_id);
-// if (isset($subscription)) {
-//    backdrop_set_message('Error: Subscription exists.');
-// } else {
+$subscription = $stripecustomer->subscriptions->retrieve($gold_id);
+if (isset($subscription)) {
+   backdrop_set_message('Error: Subscription exists.');
+} else {
 $new_subscription = $stripecustomer->subscriptions->create(array("plan" => $considered_plan));
 $current_user->field_basic_cart_plus_gold_id[$current_user->langcode][0]['value'] = $new_subscription->id;
 user_multiple_role_edit(array($current_user->uid) , 'add_role', $considered_role);
 backdrop_set_message("You have now gained " . $considered_name . " membership!");
 $current_user->save();
-// }
+}
 
 }
 
