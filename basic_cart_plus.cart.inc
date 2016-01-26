@@ -739,6 +739,7 @@ function basic_cart_plus_form_back($form, &$form_state)
     $form_state['page_num'] = 1;
     $form_state['rebuild']  = TRUE;
 }
+
 /**
  * Ajax validation on email and password.
  *

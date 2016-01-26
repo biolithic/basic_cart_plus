@@ -1,8 +1,8 @@
 BASIC CART PLUS
 ------------------------
 
-This Backdrop CMS module is working in MVP mode but not secure yet.  Please do not use for handling credit cards.
-I am making an attempt to finish this in 2015.  Thank you!
+This Backdrop CMS module is working in MVP mode but not secure yet.  Please do not use for handling live credit cards yet.
+This will be developed on Monday evenings (USA CST) 2016 or more often when an entity funds development of it.
 
 CONTENTS OF THIS FILE
 ---------------------
@@ -25,13 +25,12 @@ INTRODUCTION
 Basic cart is a very simple shopping cart / checkout process for Backdrop, that just sends 2 emails after each order. Along with the shopping cart,
 this module also provides a block where you can view your cart's content.
 
-You can sell existing nodes as physical products, nodes as donation forms, nodes as events (or virtual products), roles as memberships, roles as subscriptions through a built in
-Paypal, Braintree or Stripe payment processors.  Both Javascript (IFrame) and PHP payment forms are available through admin checkboxes.  You can also choose to forego the processor -- for example, "pay in person when you pick it up or attend".
+You can sell existing nodes as physical products, nodes as donation forms, nodes as events (or virtual products), roles as memberships, or roles as subscriptions through a built in Paypal, Braintree or Stripe payment processors.  Both Javascript (IFrame) and PHP payment forms are available through admin checkboxes.  You can also choose to forego the processor -- for example, "pay in person when you pick it up or attend".
 
 Backdrop's taxonomy system is your product categories, and Backdrop's Views are your reporting system.  It will also save all order/customer information to the payment processor because they have better reporting/admin experience than building our own.
 
-The basic idea is that you want to sell a small number of products and just want a install-the-module-and-process-cards experience.
-To support more options... you probably should not use this module or fork it and make it your own.  Drupal Commerce, Ebay, Magento, Shopify might be for you!
+The basic idea is that you want to sell a small number of products or a service that you offer and just want a install-the-module-and-process-cards experience.
+To support more options... you probably should not use this module or fork it and make it your own.  Drupal Commerce, Ebay, Magento, Shopify might be for you instead!
 
 Features
 
@@ -44,7 +43,7 @@ Features
 TESTED
 -------
 
-Working, but not working yet securely yet.
+Working, but not working yet securely yet.  Need to make the money to hire security experts to look this over so that we can offer an easy but trusted service.
 
 KNOWN ISSUES
 ---------------------
@@ -89,7 +88,7 @@ Basic Cart for Backdrop stores node id's as strings in the user $_SESSION variab
 PERMISSIONS
 ------------
 
-installs a membership role for you to use
+installs membership roles for you to use
 
 
 USAGE
